@@ -10,3 +10,16 @@ State of the art time series forecasting method that has the FFORMA ensemble lea
 
 conda env create -f environment.yml
 conda activate fformaProj
+
+## To run: <br>
+
+```bash
+python main.py
+```
+
+## Check GPU: <br>
+
+```python
+from tensorflow.python.client import device_lib
+print(device_lib.list_local_devices())
+```
