@@ -10,3 +10,6 @@ State of the art time series forecasting method that has the FFORMA ensemble lea
 
 conda env create -f environment.yml
 conda activate fformaProj
+
+## To install: <br>
+Create a Conda envrionment using fformaProj.yml
