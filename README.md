@@ -1,5 +1,6 @@
 # FFORMA-ESRNN
-State of the art time series forecasting method that has the FFORMA ensemble learn from the ESRNN hybrid model and others.
+State of the art time series forecasting method that has the FFORMA ensemble learn from the ESRNN hybrid model and others. <br>
+This implementation reuses the forecasts of the ESRNN and others from the M4 forecasting competition.
 
 ## To install: <br>
 
