@@ -9,7 +9,7 @@ from utils.analysis import evaluate_prediction_owa
 from configs.configs import FFORMA_CONFIGS, FEATURE_CONFIGS, NEURALSTACK_CONFIGS, NEURALAVERAGE_CONFIGS
 from sklearn.decomposition import PCA
 from sklearn.manifold import locally_linear_embedding
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, RobustScaler
 from lightgbm import LGBMRegressor
 import lightgbm as lgb
 from nbeats_keras.model import NBeatsNet
@@ -17,7 +17,7 @@ from tensorflow.keras.optimizers import Adam
 from keras.losses import MeanAbsolutePercentageError
 import keras.backend as K
 import seaborn as sns
-from sklearn.preprocessing import StandardScaler
+
 def smape_loss(y_true, y_pred):
     epsilon = 0.35
     summ = K.maximum(K.abs(y_true) + K.abs(y_pred) + epsilon, 0.5 + epsilon)
@@ -36,22 +36,21 @@ def forecast_error_reduction_mechanism(y_hat, y_hat_base_models, threshold=0.4):
     averaging_preds = y_hat_base_models.sum(axis=1) / y_hat_base_models.shape[1]
 
 
-
-
 def run(df_info, df_train_data, df_pred_data,
         seasonality,
-        k_folds=10, n_runs=5, optimizing_runs=0, combination_type='FFORMA'):
+        k_folds=10, n_runs=5, optimizing_runs=0, combination_type='FFORMA', hyper_search_run=False):
     overall_combination_loss = 0.0
     overall_esrnn_loss = 0.0
 
     total_combination_owa = None
 
-    for run_num in range(n_runs):
+    for run_num in range(1 if hyper_search_run else n_runs):
         combination_run_loss = 0.0
         esrnn_run_loss = 0.0
 
         kfoldings = make_kfolds(df_info, df_pred_data, k_folds, seed=run_num)
-        for test_fold_num in range(k_folds):
+        #Changed this to only do the first fold of the first run as per paper for ypers
+        for test_fold_num in range(1 if hyper_search_run else k_folds):
             train_set, test_set = train_test_split(kfoldings, test_fold_num)
 
             base_model_names = []
@@ -114,8 +113,7 @@ def run(df_info, df_train_data, df_pred_data,
                 print(parameters.x)
                 quit()
             else:
-                if combination_type == 'FFORMA' or \
-                   combination_type == 'FFORMS':
+                if combination_type in ['FFORMA','FFORMS']:
                     parameters = FFORMA_CONFIGS[seasonality]
 
             y_hat_base_models_train = train_set[['unique_id', 'ds'] + base_model_names].set_index(['unique_id', 'ds'])
@@ -143,8 +141,7 @@ def run(df_info, df_train_data, df_pred_data,
 
             #    extra_model_test = extra_model_test / np.expand_dims(y_hat_base_models_test, axis=-1)
 
-            if combination_type == 'FFORMA' or \
-               combination_type == 'FFORMS':
+            if combination_type in ['FFORMA','FFORMS']:
                 fforma = FFORMA(params=parameters, verbose_eval=1)
                 fforma.fit(errors=train_errors, holdout_feats=train_feats, feats=test_feats)
                 fforma_preds = fforma.predict(y_hat_base_models_test, combination_type).reset_index()
@@ -160,9 +157,18 @@ def run(df_info, df_train_data, df_pred_data,
                 total_combination_owa = record_comination_owas(combination_owa, total_combination_owa)
                 combination_owa = np.mean(combination_owa)
 
-            elif combination_type == 'Neural Averaging':
-                navg = ModelAveragingMLP(NEURALAVERAGE_CONFIGS[seasonality],train_feats.shape[1],train_errors.shape[1])
+            elif combination_type in ['Neural Averaging','Neural Averaging 2']:                
+                if combination_type== 'Neural Averaging':
+                    navg = ModelAveragingMLP(NEURALAVERAGE_CONFIGS[seasonality],train_feats.shape[1],train_errors.shape[1], style=combination_type)
+                else:
+                    navg = ModelAveragingMLP(NEURALAVERAGE_CONFIGS[seasonality+"_2"],train_feats.shape[1],train_errors.shape[1], style=combination_type)
+                    transformer = StandardScaler().fit(train_feats) #RobustScaler(quantile_range=(1.0, 99.0)).fit(train_feats)
+                    lower = transformer.mean_
+                    upper = transformer.scale_
+                    train_feats = ((train_feats-lower)/(upper)).fillna(0)
+                    test_feats  = ((test_feats -lower)/(upper)).fillna(0)
                 navg.fit(train_feats, train_errors)
+                print(navg.weights(train_feats))
                 navg_preds = navg.predict(test_feats, y_hat_base_models_test).reset_index()
                 # NAVG SCORE
                 test_navg_df = test_set.copy()
@@ -289,11 +295,15 @@ def run(df_info, df_train_data, df_pred_data,
         np.save(f, total_combination_owa)
 
 if __name__ == '__main__':
-    seasonality = 'Weekly'
+    seasonality = 'Yearly'
     X_train_df, y_train_df, X_test_df, y_test_df = m4_parser(seasonality, 'data', 'forecasts', load_existing_dataframes=True)
     run(df_info=X_test_df,
         df_train_data=y_train_df,
         df_pred_data=y_test_df,
         seasonality=seasonality,
         optimizing_runs=0,
-        combination_type='nbeats')
+        combination_type='Neural Averaging 2',
+        n_runs=1,
+        k_folds=10,
+        hyper_search_run=True
+        )
