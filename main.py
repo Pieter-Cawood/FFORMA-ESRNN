@@ -47,6 +47,8 @@ def run(df_info, df_train_data, df_pred_data,
 
     total_combination_owa = None
 
+    horizon = seas_dict[seasonality]['output_size']
+
     for run_num in range(1 if hyper_search_run else n_runs):
         combination_run_loss = 0.0
         combination_run_loss_median = 0.0
@@ -162,13 +164,16 @@ def run(df_info, df_train_data, df_pred_data,
                 total_combination_owa = record_comination_owas(combination_owa, total_combination_owa)
                 combination_owa_median = np.median(combination_owa)
                 combination_owa = np.mean(combination_owa)
-                combination_r2 = r2_score(predictions_df['y_hat'], test_fforma_df['y'])
+                combination_r2 = r2_score(predictions_df['y_hat'].values.reshape(horizon, -1),
+                                          test_fforma_df['y'].values.reshape(horizon, -1))
 
             elif combination_type in ['Neural Averaging','Neural Averaging 2']:                
                 if combination_type== 'Neural Averaging':
-                    navg = ModelAveragingMLP(NEURALAVERAGE_CONFIGS[seasonality],train_feats.shape[1],train_errors.shape[1], style=combination_type)
+                    navg = ModelAveragingMLP(NEURALAVERAGE_CONFIGS[seasonality],train_feats.shape[1],
+                                             train_errors.shape[1], style=combination_type)
                 else:
-                    navg = ModelAveragingMLP(NEURALAVERAGE_CONFIGS[seasonality+"_2"],train_feats.shape[1],train_errors.shape[1], style=combination_type)
+                    navg = ModelAveragingMLP(NEURALAVERAGE_CONFIGS[seasonality+"_2"],train_feats.shape[1],
+                                             train_errors.shape[1], style=combination_type)
                     transformer = StandardScaler().fit(train_feats) #RobustScaler(quantile_range=(1.0, 99.0)).fit(train_feats)
                     lower = transformer.mean_
                     upper = transformer.scale_
@@ -189,7 +194,8 @@ def run(df_info, df_train_data, df_pred_data,
                 total_combination_owa = record_comination_owas(combination_owa, total_combination_owa)
                 combination_owa_median = np.median(combination_owa)
                 combination_owa = np.mean(combination_owa)
-                combination_r2 = r2_score(predictions_df['y_hat'], test_navg_df['y'])
+                combination_r2 = r2_score(predictions_df['y_hat'].values.reshape(horizon, -1),
+                                          test_navg_df['y'].values.reshape(horizon, -1))
 
             elif combination_type == 'Neural Stacking':
                 autoscaler = StandardScaler(with_mean= False, with_std = False)
@@ -217,7 +223,8 @@ def run(df_info, df_train_data, df_pred_data,
                 total_combination_owa = record_comination_owas(combination_owa, total_combination_owa)
                 combination_owa_median = np.median(combination_owa)
                 combination_owa = np.mean(combination_owa)
-                combination_r2 = r2_score(predictions_df['y_hat'], test_nstack_df['y'])
+                combination_r2 = r2_score(predictions_df['y_hat'].values.reshape(horizon, -1),
+                                          test_nstack_df['y'].values.reshape(horizon, -1))
 
             elif combination_type == 'Model Averaging':
                 averaging_preds = y_hat_base_models_test.sum(axis=1)/y_hat_base_models_test.shape[1]
@@ -233,7 +240,8 @@ def run(df_info, df_train_data, df_pred_data,
                 total_combination_owa = record_comination_owas(combination_owa, total_combination_owa)
                 combination_owa_median = np.median(combination_owa)
                 combination_owa = np.mean(combination_owa)
-                combination_r2 = r2_score(predictions_df['y_hat'], test_averaging_df['y'])
+                combination_r2 = r2_score(predictions_df['y_hat'].values.reshape(horizon, -1),
+                                          test_averaging_df['y'].values.reshape(horizon, -1))
 
             elif combination_type == 'nbeats':
                 exo_count = train_feats.shape[2]
@@ -272,7 +280,8 @@ def run(df_info, df_train_data, df_pred_data,
                 total_combination_owa = record_comination_owas(combination_owa, total_combination_owa)
                 combination_owa_median = np.median(combination_owa)
                 combination_owa = np.mean(combination_owa)
-                combination_r2 = r2_score(predictions_df['y_hat'], test_nbeats_df)
+                combination_r2 = r2_score(predictions_df['y_hat'].values.reshape(horizon, -1),
+                                          test_nbeats_df.values.reshape(horizon, -1))
 
 
             # ESRNN SCORE

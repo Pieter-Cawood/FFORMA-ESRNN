@@ -21,6 +21,8 @@ import seaborn as sns
 
 def run(df_info, df_train_data, df_pred_data,
         seasonality):
+    horizon = seas_dict[seasonality]['output_size']
+
     owa_esrnn_df = df_pred_data['OWA_mdl_ESRNN']
     owa_arima_df = df_pred_data['OWA_mdl_ARIMA']
     owa_comb_df = df_pred_data['OWA_mdl_Comb']
@@ -45,16 +47,21 @@ def run(df_info, df_train_data, df_pred_data,
     print('Damped Median OWA: {}'.format(np.median(owa_damped_df.values)))
     print('Theta Median OWA: {}'.format(np.median(owa_theta_df.values)))
 
-    print('ESRNN R2 loss: {}'.format(r2_score(df_pred_data.y, pred_esrnn_df.values)))
-    print('ARIMA R2 loss: {}'.format(r2_score(df_pred_data.y, pred_arima_df.values)))
-    print('Comb R2 loss: {}'.format(r2_score(df_pred_data.y, pred_comb_df.values)))
-    print('Damped R2 loss: {}'.format(r2_score(df_pred_data.y, pred_damped_df.values)))
-    print('Theta R2 loss: {}'.format(r2_score(df_pred_data.y, pred_theta_df.values)))
+    print('ESRNN R2 loss: {}'.format(r2_score(df_pred_data.y.values.reshape(horizon,-1),
+                                              pred_esrnn_df.values.reshape(horizon,-1))))
+    print('ARIMA R2 loss: {}'.format(r2_score(df_pred_data.y.values.reshape(horizon,-1),
+                                              pred_arima_df.values.reshape(horizon,-1))))
+    print('Comb R2 loss: {}'.format(r2_score(df_pred_data.y.values.reshape(horizon,-1),
+                                             pred_comb_df.values.reshape(horizon,-1))))
+    print('Damped R2 loss: {}'.format(r2_score(df_pred_data.y.values.reshape(horizon,-1),
+                                               pred_damped_df.values.reshape(horizon,-1))))
+    print('Theta R2 loss: {}'.format(r2_score(df_pred_data.y.values.reshape(horizon,-1),
+                                              pred_theta_df.values.reshape(horizon,-1))))
 
 
 
 if __name__ == '__main__':
-    seasonality = 'Hourly'
+    seasonality = 'Monthly'
     X_train_df, y_train_df, X_test_df, y_test_df = m4_parser(seasonality, 'data', 'forecasts', load_existing_dataframes=True)
     run(df_info=X_test_df,
         df_train_data=y_train_df,
