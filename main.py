@@ -162,6 +162,7 @@ def run(df_info, df_train_data, df_pred_data,
                 total_combination_owa = record_comination_owas(combination_owa, total_combination_owa)
                 combination_owa_median = np.median(combination_owa)
                 combination_owa = np.mean(combination_owa)
+                combination_r2 = r2_score(predictions_df['y_hat'], test_fforma_df['y'])
 
             elif combination_type in ['Neural Averaging','Neural Averaging 2']:                
                 if combination_type== 'Neural Averaging':
@@ -188,6 +189,7 @@ def run(df_info, df_train_data, df_pred_data,
                 total_combination_owa = record_comination_owas(combination_owa, total_combination_owa)
                 combination_owa_median = np.median(combination_owa)
                 combination_owa = np.mean(combination_owa)
+                combination_r2 = r2_score(predictions_df['y_hat'], test_navg_df['y'])
 
             elif combination_type == 'Neural Stacking':
                 autoscaler = StandardScaler(with_mean= False, with_std = False)
@@ -215,6 +217,7 @@ def run(df_info, df_train_data, df_pred_data,
                 total_combination_owa = record_comination_owas(combination_owa, total_combination_owa)
                 combination_owa_median = np.median(combination_owa)
                 combination_owa = np.mean(combination_owa)
+                combination_r2 = r2_score(predictions_df['y_hat'], test_nstack_df['y'])
 
             elif combination_type == 'Model Averaging':
                 averaging_preds = y_hat_base_models_test.sum(axis=1)/y_hat_base_models_test.shape[1]
@@ -230,6 +233,7 @@ def run(df_info, df_train_data, df_pred_data,
                 total_combination_owa = record_comination_owas(combination_owa, total_combination_owa)
                 combination_owa_median = np.median(combination_owa)
                 combination_owa = np.mean(combination_owa)
+                combination_r2 = r2_score(predictions_df['y_hat'], test_averaging_df['y'])
 
             elif combination_type == 'nbeats':
                 exo_count = train_feats.shape[2]
@@ -268,6 +272,7 @@ def run(df_info, df_train_data, df_pred_data,
                 total_combination_owa = record_comination_owas(combination_owa, total_combination_owa)
                 combination_owa_median = np.median(combination_owa)
                 combination_owa = np.mean(combination_owa)
+                combination_r2 = r2_score(predictions_df['y_hat'], test_nbeats_df)
 
 
             # ESRNN SCORE
@@ -282,28 +287,33 @@ def run(df_info, df_train_data, df_pred_data,
 
             combination_run_loss += combination_owa
             combination_run_loss_median += combination_owa_median
+            combination_run_loss_r2 += combination_r2
             esrnn_run_loss += np.average(esrnn_owa)
 
             print(15 * '=','RUN:',run_num+1, ' FOLD:',test_fold_num+1, 15 * '=')
             print('ESRNN OWA ', np.average(esrnn_owa))
             print(combination_type +' Average OWA', combination_owa)
             print(combination_type + ' Median OWA', combination_run_loss_median)
+            print(combination_type + ' R2 Loss', combination_run_loss_r2)
 
         esrnn_run_score = esrnn_run_loss / k_folds
         fforma_run_score = combination_run_loss / k_folds
         overall_combination_loss += fforma_run_score
         overall_combination_loss_median += (combination_run_loss_median / k_folds)
+        overall_combination_loss_r2 += (combination_run_loss_r2 / k_folds)
         overall_esrnn_loss += esrnn_run_score
 
         print(15 * '=', 'RUN:', run_num + 1, ' AVERAGES:', 15 * '=')
         print('ESRNN OWA: {} '.format(np.round(esrnn_run_score, 3)))
         print(combination_type + ' Average OWA: {} '.format(np.round(fforma_run_score, 3)))
         print(combination_type + ' Median OWA: {} '.format(np.round((combination_run_loss_median / k_folds), 3)))
+        print(combination_type + ' R2 loss: {} '.format(np.round((combination_run_loss_r2 / k_folds), 3)))
 
     print(15 * '=',  'AVERAGES OVER ALL RUNS:', 15 * '=')
     print('ESRNN OWA: {} '.format(np.round(overall_esrnn_loss/n_runs, 3)))
     print(combination_type + ' Average OWA: {} '.format(np.round(overall_combination_loss / n_runs, 3)))
     print(combination_type + ' Median OWA: {} '.format(np.round(overall_combination_loss_median / n_runs, 3)))
+    print(combination_type + ' R2 loss: {} '.format(np.round(overall_combination_loss_r2 / n_runs, 3)))
 
     # SAVE combo OWAs to file
     with open('results/'+combination_type+'_'+seasonality[0]+'.npy', 'wb') as f:
@@ -318,7 +328,7 @@ if __name__ == '__main__':
         seasonality=seasonality,
         optimizing_runs=0,
         combination_type='Neural Averaging 2',
-        n_runs=5,
+        n_runs=1,
         k_folds=10,
         hyper_search_run=False
         )
