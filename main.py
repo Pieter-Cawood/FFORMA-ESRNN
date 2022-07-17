@@ -50,6 +50,7 @@ def run(df_info, df_train_data, df_pred_data,
     horizon = seas_dict[seasonality]['output_size']
 
     for run_num in range(1 if hyper_search_run else n_runs):
+        
         combination_run_loss = 0.0
         combination_run_loss_median = 0.0
         combination_run_loss_r2 = 0.0
@@ -57,6 +58,7 @@ def run(df_info, df_train_data, df_pred_data,
 
         kfoldings = make_kfolds(df_info, df_pred_data, k_folds, seed=run_num)
         #Changed this to only do the first fold of the first run as per paper for ypers
+        
         for test_fold_num in range(1 if hyper_search_run else k_folds):
             train_set, test_set = train_test_split(kfoldings, test_fold_num)
 
@@ -114,7 +116,6 @@ def run(df_info, df_train_data, df_pred_data,
             train_errors = train_errors.filter(regex='^OWA_',axis=1)
             train_errors.columns = train_errors.columns.str.lstrip('OWA_')
 
-
             if optimizing_runs > 0:
                 parameters = get_optimal_params(train_errors, train_feats, test_feats, optimizing_runs)
                 print(parameters.x)
@@ -127,26 +128,21 @@ def run(df_info, df_train_data, df_pred_data,
             y_hat_base_models_test = test_set[['unique_id','ds'] + base_model_names].set_index(['unique_id','ds'])
 
             if combination_type == 'nbeats':
-              #  extra_model_train = y_hat_base_models_train['mdl_245'].values
+                # extra_model_train = y_hat_base_models_train['mdl_245'].values
                 y_hat_base_models_train = y_hat_base_models_train['mdl_ESRNN'].values
                 y_hat_base_models_train = np.reshape(y_hat_base_models_train, (train_set['unique_id'].nunique(),
                                                      seas_dict[seasonality]['output_size']))#,
-
-             #   extra_model_train = np.reshape(extra_model_train, (train_set['unique_id'].nunique(),
-             #                                                      seas_dict[seasonality]['output_size'], 1))
-              #  extra_model_train = extra_model_train / np.expand_dims(y_hat_base_models_train, axis=-1)
-
+                # extra_model_train = np.reshape(extra_model_train, (train_set['unique_id'].nunique(),
+                                                                #   seas_dict[seasonality]['output_size'], 1))
+                # extra_model_train = extra_model_train / np.expand_dims(y_hat_base_models_train, axis=-1)
                 extra_model_train = None
-
-              #  extra_model_test = y_hat_base_models_test['mdl_245'].values
+                # extra_model_test = y_hat_base_models_test['mdl_245'].values
                 y_hat_base_models_test = y_hat_base_models_test['mdl_ESRNN'].values
                 y_hat_base_models_test = np.reshape(y_hat_base_models_test, (test_set['unique_id'].nunique(),
                                                      seas_dict[seasonality]['output_size']))
-
-         #       extra_model_test = np.reshape(extra_model_test, (test_set['unique_id'].nunique(),
-           #                                                     seas_dict[seasonality]['output_size'], 1))
-
-            #    extra_model_test = extra_model_test / np.expand_dims(y_hat_base_models_test, axis=-1)
+                # extra_model_test = np.reshape(extra_model_test, (test_set['unique_id'].nunique(),
+                                                            #    seas_dict[seasonality]['output_size'], 1))
+                # extra_model_test = extra_model_test / np.expand_dims(y_hat_base_models_test, axis=-1)
 
             if combination_type in ['FFORMA','FFORMS']:
                 fforma = FFORMA(params=parameters, verbose_eval=1)
@@ -161,11 +157,7 @@ def run(df_info, df_train_data, df_pred_data,
                                                                 y_test_df=test_fforma_df,
                                                                 naive2_seasonality=seas_dict[seasonality]['seasonality'],
                                                                 return_averages=False)
-                total_combination_owa = record_comination_owas(combination_owa, total_combination_owa)
-                combination_owa_median = np.median(combination_owa)
-                combination_owa = np.mean(combination_owa)
-                combination_r2 = r2_score(predictions_df['y_hat'].values.reshape(horizon, -1),
-                                          test_fforma_df['y'].values.reshape(horizon, -1))
+                test_df = test_fforma_df
 
             elif combination_type in ['Neural Averaging','Neural Averaging 2']:                
                 if combination_type== 'Neural Averaging':
@@ -191,19 +183,15 @@ def run(df_info, df_train_data, df_pred_data,
                                                                 y_test_df=test_navg_df,
                                                                 naive2_seasonality=seas_dict[seasonality]['seasonality'],
                                                                 return_averages=False)
-                total_combination_owa = record_comination_owas(combination_owa, total_combination_owa)
-                combination_owa_median = np.median(combination_owa)
-                combination_owa = np.mean(combination_owa)
-                combination_r2 = r2_score(predictions_df['y_hat'].values.reshape(horizon, -1),
-                                          test_navg_df['y'].values.reshape(horizon, -1))
+                test_df = test_navg_df
 
             elif combination_type == 'Neural Stacking':
                 autoscaler = StandardScaler(with_mean= False, with_std = False)
-               # y_hat_base_models_train[y_hat_base_models_train.columns] = autoscaler.fit_transform(y_hat_base_models_train[y_hat_base_models_train.columns])
+                # y_hat_base_models_train[y_hat_base_models_train.columns] = autoscaler.fit_transform(y_hat_base_models_train[y_hat_base_models_train.columns])
                 train_features = pd.concat([train_feats.reset_index(),
                                             y_hat_base_models_train.reset_index()], axis=1).\
                     set_index(['unique_id']).drop(columns=['ds'])
-             #   y_hat_base_models_test[y_hat_base_models_test.columns] = autoscaler.fit_transform(y_hat_base_models_test[y_hat_base_models_test.columns])
+                # y_hat_base_models_test[y_hat_base_models_test.columns] = autoscaler.fit_transform(y_hat_base_models_test[y_hat_base_models_test.columns])
                 test_features = pd.concat([test_feats.reset_index(),
                                            y_hat_base_models_test.reset_index()], axis=1).\
                     set_index(['unique_id']).drop(columns=['ds'])
@@ -220,11 +208,7 @@ def run(df_info, df_train_data, df_pred_data,
                                                                 y_test_df=test_nstack_df,
                                                                 naive2_seasonality=seas_dict[seasonality]['seasonality'],
                                                                 return_averages=False)
-                total_combination_owa = record_comination_owas(combination_owa, total_combination_owa)
-                combination_owa_median = np.median(combination_owa)
-                combination_owa = np.mean(combination_owa)
-                combination_r2 = r2_score(predictions_df['y_hat'].values.reshape(horizon, -1),
-                                          test_nstack_df['y'].values.reshape(horizon, -1))
+                test_df = test_nstack_df
 
             elif combination_type == 'Model Averaging':
                 averaging_preds = y_hat_base_models_test.sum(axis=1)/y_hat_base_models_test.shape[1]
@@ -237,11 +221,7 @@ def run(df_info, df_train_data, df_pred_data,
                                                                 y_test_df=test_averaging_df,
                                                                 naive2_seasonality=seas_dict[seasonality]['seasonality'],
                                                                 return_averages=False)
-                total_combination_owa = record_comination_owas(combination_owa, total_combination_owa)
-                combination_owa_median = np.median(combination_owa)
-                combination_owa = np.mean(combination_owa)
-                combination_r2 = r2_score(predictions_df['y_hat'].values.reshape(horizon, -1),
-                                          test_averaging_df['y'].values.reshape(horizon, -1))
+                test_df = test_averaging_df                
 
             elif combination_type == 'nbeats':
                 exo_count = train_feats.shape[2]
@@ -277,12 +257,13 @@ def run(df_info, df_train_data, df_pred_data,
                                                                 naive2_seasonality=seas_dict[seasonality][
                                                                     'seasonality'],
                                                                 return_averages=False)
-                total_combination_owa = record_comination_owas(combination_owa, total_combination_owa)
-                combination_owa_median = np.median(combination_owa)
-                combination_owa = np.mean(combination_owa)
-                combination_r2 = r2_score(predictions_df['y_hat'].values.reshape(horizon, -1),
-                                          test_nbeats_df.values.reshape(horizon, -1))
+                test_df = test_nbeats_df                
 
+            total_combination_owa = record_comination_owas(combination_owa, total_combination_owa)
+            combination_owa_median = np.median(combination_owa)
+            combination_owa_mean = np.mean(combination_owa)
+            combination_r2 = r2_score(predictions_df['y_hat'].values.reshape(horizon, -1),
+                                        test_df['y'].values.reshape(horizon, -1))    
 
             # ESRNN SCORE
             test_esrnn_df = test_set.copy()
@@ -293,34 +274,34 @@ def run(df_info, df_train_data, df_pred_data,
                                                       y_test_df=test_esrnn_df,
                                                       naive2_seasonality=seas_dict[seasonality]['seasonality'],
                                                       return_averages=False)
-
-            combination_run_loss += combination_owa
-            combination_run_loss_median += combination_owa_median
-            combination_run_loss_r2 += combination_r2
             esrnn_run_loss += np.average(esrnn_owa)
+
+            combination_run_loss_mean += combination_owa_mean
+            combination_run_loss_median += combination_owa_median
+            combination_run_loss_r2 += combination_r2            
 
             print(15 * '=','RUN:',run_num+1, ' FOLD:',test_fold_num+1, 15 * '=')
             print('ESRNN OWA ', np.average(esrnn_owa))
-            print(combination_type +' Average OWA', combination_owa)
-            print(combination_type + ' Median OWA', combination_run_loss_median)
-            print(combination_type + ' R2 Loss', combination_run_loss_r2)
+            print(combination_type +' Average OWA', combination_owa_mean)
+            print(combination_type + ' Median OWA', combination_owa_median)
+            print(combination_type + ' R2 Loss', combination_r2)
 
-        esrnn_run_score = esrnn_run_loss / k_folds
-        fforma_run_score = combination_run_loss / k_folds
-        overall_combination_loss += fforma_run_score
+        esrnn_run_score = esrnn_run_loss / k_folds        
+        
+        overall_combination_loss_mean += (combination_run_loss_mean / k_folds)
         overall_combination_loss_median += (combination_run_loss_median / k_folds)
-        overall_combination_loss_r2 += (combination_run_loss_r2 / k_folds)
+        overall_combination_loss_r2 += (combination_run_loss_r2 / k_folds)        
         overall_esrnn_loss += esrnn_run_score
 
         print(15 * '=', 'RUN:', run_num + 1, ' AVERAGES:', 15 * '=')
         print('ESRNN OWA: {} '.format(np.round(esrnn_run_score, 3)))
-        print(combination_type + ' Average OWA: {} '.format(np.round(fforma_run_score, 3)))
+        print(combination_type + ' Average OWA: {} '.format(np.round((combination_run_loss_mean / k_folds), 3)))
         print(combination_type + ' Median OWA: {} '.format(np.round((combination_run_loss_median / k_folds), 3)))
         print(combination_type + ' R2 loss: {} '.format(np.round((combination_run_loss_r2 / k_folds), 3)))
 
     print(15 * '=',  'AVERAGES OVER ALL RUNS:', 15 * '=')
     print('ESRNN OWA: {} '.format(np.round(overall_esrnn_loss/n_runs, 3)))
-    print(combination_type + ' Average OWA: {} '.format(np.round(overall_combination_loss / n_runs, 3)))
+    print(combination_type + ' Average OWA: {} '.format(np.round(overall_combination_loss_mean / n_runs, 3)))
     print(combination_type + ' Median OWA: {} '.format(np.round(overall_combination_loss_median / n_runs, 3)))
     print(combination_type + ' R2 loss: {} '.format(np.round(overall_combination_loss_r2 / n_runs, 3)))
 
@@ -329,7 +310,7 @@ def run(df_info, df_train_data, df_pred_data,
         np.save(f, total_combination_owa)
 
 if __name__ == '__main__':
-    seasonality = 'Hourly'
+    seasonality = 'Daily'
     X_train_df, y_train_df, X_test_df, y_test_df = m4_parser(seasonality, 'data', 'forecasts', load_existing_dataframes=True)
     run(df_info=X_test_df,
         df_train_data=y_train_df,
@@ -337,7 +318,7 @@ if __name__ == '__main__':
         seasonality=seasonality,
         optimizing_runs=0,
         combination_type='Neural Averaging 2',
-        n_runs=1,
+        n_runs=5,
         k_folds=10,
         hyper_search_run=False
         )
