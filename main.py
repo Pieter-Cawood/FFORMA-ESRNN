@@ -40,25 +40,31 @@ def forecast_error_reduction_mechanism(y_hat, y_hat_base_models, threshold=0.4):
 def run(df_info, df_train_data, df_pred_data,
         seasonality,
         k_folds=10, n_runs=5, optimizing_runs=0, combination_type='FFORMA', hyper_search_run=False):
-    overall_combination_loss = 0.0
+    
     overall_combination_loss_median = 0.0
+    overall_combination_loss_mean = 0.0
+    overall_combination_loss_std = 0.0
     overall_combination_loss_r2 = 0.0
     overall_esrnn_loss = 0.0
 
     total_combination_owa = None
 
+    df_results =  pd.DataFrame()
+
     horizon = seas_dict[seasonality]['output_size']
 
     for run_num in range(1 if hyper_search_run else n_runs):
         
-        combination_run_loss = 0.0
         combination_run_loss_median = 0.0
+        combination_run_loss_mean = 0.0
+        combination_run_loss_std = 0.0
         combination_run_loss_r2 = 0.0
         esrnn_run_loss = 0.0
 
         kfoldings = make_kfolds(df_info, df_pred_data, k_folds, seed=run_num)
         #Changed this to only do the first fold of the first run as per paper for ypers
-        
+        from joblib import Parallel, delayed
+
         for test_fold_num in range(1 if hyper_search_run else k_folds):
             train_set, test_set = train_test_split(kfoldings, test_fold_num)
 
@@ -66,6 +72,7 @@ def run(df_info, df_train_data, df_pred_data,
             for base_model in train_set.columns[train_set.columns.str.startswith('mdl_')].tolist():
                 if base_model != 'mdl_naive2':
                     base_model_names.append(base_model)
+            
             if (combination_type == 'nbeats'):
                 train_feats = train_set.copy()
                 train_feats = train_feats.set_index('unique_id')
@@ -262,8 +269,9 @@ def run(df_info, df_train_data, df_pred_data,
             total_combination_owa = record_comination_owas(combination_owa, total_combination_owa)
             combination_owa_median = np.median(combination_owa)
             combination_owa_mean = np.mean(combination_owa)
+            combination_owa_std = np.std(combination_owa)
             combination_r2 = r2_score(predictions_df['y_hat'].values.reshape(horizon, -1),
-                                        test_df['y'].values.reshape(horizon, -1))    
+                                      test_df['y'].values.reshape(horizon, -1))
 
             # ESRNN SCORE
             test_esrnn_df = test_set.copy()
@@ -274,51 +282,59 @@ def run(df_info, df_train_data, df_pred_data,
                                                       y_test_df=test_esrnn_df,
                                                       naive2_seasonality=seas_dict[seasonality]['seasonality'],
                                                       return_averages=False)
+            
             esrnn_run_loss += np.average(esrnn_owa)
-
-            combination_run_loss_mean += combination_owa_mean
             combination_run_loss_median += combination_owa_median
+            combination_run_loss_mean += combination_owa_mean
+            combination_run_loss_std += combination_owa_std
             combination_run_loss_r2 += combination_r2            
 
             print(15 * '=','RUN:',run_num+1, ' FOLD:',test_fold_num+1, 15 * '=')
             print('ESRNN OWA ', np.average(esrnn_owa))
-            print(combination_type +' Average OWA', combination_owa_mean)
+            print(combination_type +' Mean OWA', combination_owa_mean)
             print(combination_type + ' Median OWA', combination_owa_median)
             print(combination_type + ' R2 Loss', combination_r2)
 
         esrnn_run_score = esrnn_run_loss / k_folds        
         
-        overall_combination_loss_mean += (combination_run_loss_mean / k_folds)
         overall_combination_loss_median += (combination_run_loss_median / k_folds)
+        overall_combination_loss_mean += (combination_run_loss_mean / k_folds)
+        overall_combination_loss_std += (combination_run_loss_std / k_folds)
         overall_combination_loss_r2 += (combination_run_loss_r2 / k_folds)        
         overall_esrnn_loss += esrnn_run_score
 
         print(15 * '=', 'RUN:', run_num + 1, ' AVERAGES:', 15 * '=')
         print('ESRNN OWA: {} '.format(np.round(esrnn_run_score, 3)))
-        print(combination_type + ' Average OWA: {} '.format(np.round((combination_run_loss_mean / k_folds), 3)))
+        print(combination_type + ' Mean OWA: {} '.format(np.round((combination_run_loss_mean / k_folds), 3)))
         print(combination_type + ' Median OWA: {} '.format(np.round((combination_run_loss_median / k_folds), 3)))
         print(combination_type + ' R2 loss: {} '.format(np.round((combination_run_loss_r2 / k_folds), 3)))
 
     print(15 * '=',  'AVERAGES OVER ALL RUNS:', 15 * '=')
     print('ESRNN OWA: {} '.format(np.round(overall_esrnn_loss/n_runs, 3)))
-    print(combination_type + ' Average OWA: {} '.format(np.round(overall_combination_loss_mean / n_runs, 3)))
+    print(combination_type + ' Mean OWA: {} '.format(np.round(overall_combination_loss_mean / n_runs, 3)))
     print(combination_type + ' Median OWA: {} '.format(np.round(overall_combination_loss_median / n_runs, 3)))
     print(combination_type + ' R2 loss: {} '.format(np.round(overall_combination_loss_r2 / n_runs, 3)))
+
+    df_results.loc[f"{combination_type}-{seasonality}","mean"] = overall_combination_loss_mean / n_runs
+    df_results.loc[f"{combination_type}-{seasonality}","median"] = overall_combination_loss_median / n_runs
+    df_results.loc[f"{combination_type}-{seasonality}","std"] = overall_combination_loss_std / n_runs
+    df_results.to_pickle(f"results/{combination_type}_{seasonality[0]}.pd")
 
     # SAVE combo OWAs to file
     with open('results/'+combination_type+'_'+seasonality[0]+'.npy', 'wb') as f:
         np.save(f, total_combination_owa)
 
 if __name__ == '__main__':
-    seasonality = 'Daily'
-    X_train_df, y_train_df, X_test_df, y_test_df = m4_parser(seasonality, 'data', 'forecasts', load_existing_dataframes=True)
-    run(df_info=X_test_df,
-        df_train_data=y_train_df,
-        df_pred_data=y_test_df,
-        seasonality=seasonality,
-        optimizing_runs=0,
-        combination_type='Neural Averaging 2',
-        n_runs=5,
-        k_folds=10,
-        hyper_search_run=False
-        )
+    for seasonality in ['Hourly','Daily','Weekly','Monthly','Quarterly','Yearly']:
+        # seasonality = 'Daily'
+        X_train_df, y_train_df, X_test_df, y_test_df = m4_parser(seasonality, 'data', 'forecasts', load_existing_dataframes=True)
+        for combination_type in ['FFORMA','FFORMS','Model Averaging','Neural Averaging 2','Neural Stacking'][3:4]:
+            run(df_info=X_test_df,
+                df_train_data=y_train_df,
+                df_pred_data=y_test_df,
+                seasonality=seasonality,
+                optimizing_runs=0,
+                combination_type=combination_type,
+                n_runs=5,
+                k_folds=10,
+                hyper_search_run=False)

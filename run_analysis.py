@@ -59,13 +59,13 @@ if __name__ == '__main__':
       #  print(model_name, "max :", np.max(owas))
 
     ensemble_owas.rename(columns={'Model Averaging': 'AVG',
-                                  'Neural Averaging': 'NN-AVG',
+                                  'Neural Averaging': 'FFORMA-N',
                                   'Neural Stacking': 'NN-STACK',
                                   },
                          inplace=True)
     plot_ensemble_errors = deepcopy(ensemble_owas)
     plot_ensemble_errors[plot_ensemble_errors > max_owa_clip] = max_owa_clip
-    sns.violinplot(ax=ax[1], data=plot_ensemble_errors, palette={"FFORMA": "y", "FFORMS":"lime", "AVG":"white", "NN-AVG": "pink", "NN-STACK":"grey"})
+    sns.violinplot(ax=ax[1], data=plot_ensemble_errors, palette={"FFORMA": "y", "FFORMS":"lime", "AVG":"white", "FFORMA-N": "pink", "NN-STACK":"grey"})
     ax[1].tick_params(axis='x', rotation=35)
     #ensemble_ax.set_title(seasonality + ' Data - Ensemble Forecasts')
    # ax[1].set_ylabel('OWA')
