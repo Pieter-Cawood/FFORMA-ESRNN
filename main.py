@@ -66,6 +66,9 @@ def run(df_info, df_train_data, df_pred_data,
         from joblib import Parallel, delayed
 
         for test_fold_num in range(1 if hyper_search_run else k_folds):
+            # print(test_fold_num)
+            # if test_fold_num != 2:
+            #     continue
             train_set, test_set = train_test_split(kfoldings, test_fold_num)
 
             base_model_names = []
@@ -289,7 +292,7 @@ def run(df_info, df_train_data, df_pred_data,
             combination_run_loss_std += combination_owa_std
             combination_run_loss_r2 += combination_r2            
 
-            print(15 * '=','RUN:',run_num+1, ' FOLD:',test_fold_num+1, 15 * '=')
+            print(15 * '=','RUN:',run_num + 1, ' FOLD:',test_fold_num+1, 15 * '=')
             print('ESRNN OWA ', np.average(esrnn_owa))
             print(combination_type +' Mean OWA', combination_owa_mean)
             print(combination_type + ' Median OWA', combination_owa_median)

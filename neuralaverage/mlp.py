@@ -37,7 +37,7 @@ class ModelAveragingMLP():
         layer_units = self.mc['model_parameters']['layer_units']
         self.model = Sequential()
         #for n, units in enumerate(layer_units):
-        self.model.add(Input([n_features]))        
+        self.model.add(Input([n_features]))
         if style == 'Neural Averaging':
             for _i in range(len(layer_units)):
                 self.model.add(Dense(layer_units[_i],activation='relu'))
@@ -46,17 +46,20 @@ class ModelAveragingMLP():
             self.optimizer = Adam(lr=self.mc['train_parameters']['learn_rate'])
             self.model.compile(loss='categorical_crossentropy', optimizer=self.optimizer)
         elif style == 'Neural Averaging 2':
-            for _i in range(len(layer_units)):
-                self.model.add(Dense(layer_units[_i],activation='tanh'))
+            self.model.add(Dropout(0.1))
+            for _i in range(len(layer_units)-1):   
+                self.model.add(Dense(layer_units[_i],activation='relu'))            
                 self.model.add(BatchNormalization())
+            self.model.add(Dense(layer_units[-1],activation='tanh'))
+            self.model.add(Dense(n_models, activation='softmax', use_bias=False))
+            
+            self.optimizer = Adam(lr=self.mc['train_parameters']['learn_rate'])
+            self.model.compile(loss=fforma_loss, optimizer=self.optimizer)
             # self.model.add(Dense(n_models,
             #                      activation=sumoneact,
             #                      use_bias=False,
-            #                      kernel_regularizer=l1_l2(l1=1.0,l2=0.0)))
-            self.model.add(Dense(n_models, activation='softmax', use_bias=False))
-            self.optimizer = Adam(lr=self.mc['train_parameters']['learn_rate'])
-            self.model.compile(loss=fforma_loss, optimizer=self.optimizer)
-
+            #                      kernel_regularizer=l1_l2(l1=1.0,l2=0.0)))         
+        
         self.fitted = False
 
     def fit(self, features, errors):
@@ -75,7 +78,7 @@ class ModelAveragingMLP():
                        epochs=self.mc['train_parameters']['epochs'],
                        verbose=1,
                        callbacks=[es],
-                       validation_split=0.15
+                       validation_split=0.10
                        )
         self.fitted = True
 
