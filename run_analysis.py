@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from copy import deepcopy
 
 if __name__ == '__main__':
-    seasonality = 'Weekly'
+    seasonality = 'Yearly'
     max_owa_clip = 3.0
   #  test = np.load('/tmp/123.npy')
 
@@ -34,6 +34,7 @@ if __name__ == '__main__':
     ax[0].tick_params(axis='x', rotation=35)
    # base_ax.set_title(seasonality + ' Data - Base Model Forecasts')
     ax[0].set_ylabel('OWA')
+    ax[0].set_ylim([-0.5,3.5])
   #  plt.savefig(seasonality[0] + '_basemodels_plot.pdf')
    # plt.show()
 
@@ -48,25 +49,40 @@ if __name__ == '__main__':
     for file in glob.glob("*"+seasonality[0]+".npy"):
         model_name = file.rsplit('_'+seasonality[0]+'.npy')[0]
         ensemble_names.append(model_name)
-        owas = np.load(file)
-        if ensemble_owas is None:
-            ensemble_owas = pd.DataFrame(owas,columns=[model_name])
-        else:
-            ensemble_owas[model_name] = owas
-        str_result = model_name + " average : " + str(np.mean(owas))
-        print(str_result)
-        f.write(str_result + '\n')
+        try:
+          owas = np.load(file)
+          if ensemble_owas is None:
+              ensemble_owas = pd.DataFrame(owas,columns=[model_name])
+          else:
+              ensemble_owas[model_name] = owas
+          str_result = model_name + " average : " + str(np.mean(owas))
+          print(str_result)
+          f.write(str_result + '\n')
+        except ValueError:
+          print(file)
       #  print(model_name, "max :", np.max(owas))
 
     ensemble_owas.rename(columns={'Model Averaging': 'AVG',
-                                  'Neural Averaging': 'FFORMA-N',
+                                  'Neural Averaging 2': 'FFORMA-N',
                                   'Neural Stacking': 'NN-STACK',
                                   },
                          inplace=True)
     plot_ensemble_errors = deepcopy(ensemble_owas)
+    plot_ensemble_errors = plot_ensemble_errors.drop(columns=["Neural Averaging", 
+                                                              "Neural Stacking 2",
+                                                              "nbeats",
+                                                              "Neural Averaging",
+                                                              "OLD_FFORMS"],errors='ignore')
     plot_ensemble_errors[plot_ensemble_errors > max_owa_clip] = max_owa_clip
-    sns.violinplot(ax=ax[1], data=plot_ensemble_errors, palette={"FFORMA": "y", "FFORMS":"lime", "AVG":"white", "FFORMA-N": "pink", "NN-STACK":"grey"})
+    sns.violinplot(ax=ax[1], data=plot_ensemble_errors, 
+      palette={"FFORMA": "y", 
+               "FFORMS":"lime", 
+               "AVG":"white", 
+               "FFORMA-N": "pink", 
+               "NN-STACK":"grey"})
     ax[1].tick_params(axis='x', rotation=35)
+    ax[1].set_ylim([-0.5,3.5])
+    ax[1].yaxis.set_ticklabels([])
     #ensemble_ax.set_title(seasonality + ' Data - Ensemble Forecasts')
    # ax[1].set_ylabel('OWA')
     plt.subplots_adjust(bottom=0.15)

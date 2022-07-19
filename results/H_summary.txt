@@ -6,6 +6,7 @@ Theta average : 1.0057602325553057
 FFORMA average : 0.41466644473661346
 FFORMS average : 0.42710545536884104
 Model Averaging average : 0.8467193748263632
+Neural Averaging 2 average : 0.42835178347646335
 Neural Averaging average : 0.45313400195398573
 Neural Stacking average : 1.4271269399051942
 OLD_FFORMS average : 0.42266918671513076

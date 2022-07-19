@@ -63,7 +63,7 @@ NEURALAVERAGE_CONFIGS = {
             learn_rate=1e-4,
             batch_size=225,
             epochs=2400,
-            stop_grow_count=200
+            stop_grow_count=100
         )),
 
     'Weekly_2': dict(
@@ -74,7 +74,7 @@ NEURALAVERAGE_CONFIGS = {
             learn_rate=1e-4,
             batch_size=225,
             epochs=2400,
-            stop_grow_count=200
+            stop_grow_count=100
         )),
     
     'Daily_2': dict(
@@ -85,18 +85,18 @@ NEURALAVERAGE_CONFIGS = {
             learn_rate=1e-4,
             batch_size=225,
             epochs=2400,
-            stop_grow_count=200
+            stop_grow_count=100
         )),
     
     'Monthly_2': dict(
         model_parameters=dict(
-            layer_units=[320,80,6]
+            layer_units=[480,120,6]
         ),
         train_parameters=dict(
             learn_rate=1e-4,
             batch_size=225,
             epochs=2400,
-            stop_grow_count=200
+            stop_grow_count=100
         )),
     
     'Quarterly_2': dict(
@@ -107,7 +107,7 @@ NEURALAVERAGE_CONFIGS = {
             learn_rate=1e-4,
             batch_size=225,
             epochs=2400,
-            stop_grow_count=200
+            stop_grow_count=100
         )),
 
     'Yearly_2': dict(
@@ -118,7 +118,7 @@ NEURALAVERAGE_CONFIGS = {
             learn_rate=1e-4,
             batch_size=225,
             epochs=2400,
-            stop_grow_count=200
+            stop_grow_count=100
         )),
 
     'Hourly': dict(

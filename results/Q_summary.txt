@@ -3,6 +3,7 @@ Comb average : 0.8897706450359731
 Damped average : 0.8925654352308896
 ESRNN average : 0.8471945820782458
 Theta average : 0.9174128370908636
+Neural Averaging 2 average : 0.8284443157336322
 FFORMA average : 0.8163395985372763
 FFORMS average : 0.8264283397060829
 Model Averaging average : 0.85578547633405

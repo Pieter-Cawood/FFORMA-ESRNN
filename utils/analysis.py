@@ -403,4 +403,4 @@ def owa(y_panel, y_hat_panel, y_naive2_panel, y_insample, seasonality, return_av
         model_smape = np.array(total_smape) * 100
         model_owa = (model_smape/np.mean(naive2_smape) + model_mase/np.mean(naive2_mase))/2
 
-    return model_owa, model_mase, model_smape
+    return model_owa, model_mase, model_smape #naive2_mase, naive2_smape
