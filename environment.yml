@@ -4,10 +4,7 @@ channels:
   - defaults
 dependencies:
   - python==3.8
-  - tensorflow==2.7
-  - keras==2.7
   - lightgbm==2.3
-  - tensorboard
   - pip
   - pandas
   - numpy
@@ -70,10 +67,6 @@ dependencies:
     # - six==1.16.0
     # - stochastic==0.6.0
     # - supersmoother==0.4
-    - tensorboard-data-server
-    - tensorboard-plugin-wit
-    - tensorflow-estimator==2.7.0
-    - tensorflow-io-gcs-filesystem==0.21.0
     # - termcolor==1.1.0
     # - threadpoolctl==3.0.0
     - tqdm==4.62.3
@@ -82,3 +75,15 @@ dependencies:
     # - urllib3==1.26.7
     # - werkzeug==2.0.2
     # - wrapt==1.13.3
+    - keras==2.9.0                
+    - nvidia-ml-py==11.495.46
+    - nvitop==0.6.2
+    - pip==22.2.1
+    - tensorboard==2.9.1
+    - tensorboard-data-server==0.6.1
+    - tensorboard-plugin-wit==1.8.0
+    - tensorflow==2.9.1
+    - tensorflow-estimator==2.9.0
+    - tensorflow-gpu==2.9.1
+    - tensorflow-io-gcs-filesystem==0.26.0    
+    
