@@ -1,3 +1,95 @@
+DEEPFFORMA_CONFIGS = {
+    'Hourly': dict(
+        model_parameters=dict(            
+            min_length=32,
+            vgg_filters=16,
+            dropout_rate=0.1,
+            seasons=24
+        ),
+        train_parameters=dict(
+            learn_rate=1e-4,
+            batch_size=92,
+            epochs=500,
+            max_length=960,
+            stop_grow_count=80
+        )),
+    
+    'Daily': dict(
+        model_parameters=dict(            
+            min_length=32,
+            vgg_filters=16,
+            dropout_rate=0.1,
+            seasons=7
+        ),
+        train_parameters=dict(
+            learn_rate=1e-4,
+            batch_size=92,
+            epochs=250,
+            max_length=4197, #95
+            stop_grow_count=40
+        )),
+
+    'Weekly': dict(
+        model_parameters=dict(
+            min_length=32,
+            vgg_filters=16,
+            dropout_rate=0.1,
+            seasons=52
+        ),
+        train_parameters=dict(
+            learn_rate=1e-4,
+            batch_size=92,
+            epochs=500,
+            max_length=934, #50
+            stop_grow_count=80
+        )),
+    
+    'Monthly': dict(
+        model_parameters=dict(
+            min_length=32,
+            vgg_filters=32,
+            dropout_rate=0.1,
+            seasons=12
+        ),
+        train_parameters=dict(
+            learn_rate=1e-4,
+            batch_size=92,
+            epochs=150,
+            max_length=450, #95
+            stop_grow_count=40
+        )),
+
+    'Quarterly': dict(
+        model_parameters=dict(
+            min_length=32,
+            vgg_filters=32,
+            dropout_rate=0.1,
+            seasons=4
+        ),
+        train_parameters=dict(
+            learn_rate=1e-4,
+            batch_size=92,
+            epochs=150,
+            max_length=267, #99
+            stop_grow_count=40
+        )),
+
+    'Yearly': dict(
+        model_parameters=dict(            
+            min_length=32,
+            vgg_filters=32,
+            dropout_rate=0.1,
+            seasons=1
+        ),
+        train_parameters=dict(
+            learn_rate=1e-4,
+            batch_size=92,
+            epochs=150,
+            max_length=81, #99
+            stop_grow_count=40
+        ))
+}
+
 FFORMA_CONFIGS = {
     'Hourly': dict(
         n_estimators=2000,  # Number of iterations 100 default

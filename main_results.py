@@ -47,8 +47,17 @@ def run(df_info, df_train_data, df_pred_data,
 if __name__ == '__main__':
     for seasonality in ['Hourly','Daily','Weekly','Monthly','Quarterly','Yearly']:
         # seasonality = 'Daily'
-        X_train_df, y_train_df, X_test_df, y_test_df = m4_parser(seasonality, 'data', 'forecasts', load_existing_dataframes=True)
-        for combination_type in ['FFORMA','FFORMS','Model Averaging','Neural Averaging 2','Neural Stacking'][3:4]:
+        X_train_df, y_train_df, X_test_df, y_test_df = m4_parser(seasonality, 
+                                                                 'data', 
+                                                                 'forecasts', 
+                                                                 load_existing_dataframes=True)
+        for combination_type in ['nbeats',
+                                 'FFORMA',
+                                 'FFORMS',
+                                 'Model Averaging',
+                                 'Neural Averaging 2',
+                                 'Neural Stacking',
+                                 'Deep FFORMA'][-1:]:
             run(df_info=X_test_df,
                 df_train_data=y_train_df,
                 df_pred_data=y_test_df,

@@ -1,12 +1,13 @@
 from fforma import FFORMA
 from fforma.optimization import *
 from neuralaverage.mlp import *
+from deepfforma.mlp import DeepFFORMA
 from stacking.mlp import *
 from utils.data import *
 import pandas as pd
 import numpy as np
 from utils.analysis import evaluate_prediction_owa
-from configs.configs import FFORMA_CONFIGS, FEATURE_CONFIGS, NEURALSTACK_CONFIGS, NEURALAVERAGE_CONFIGS
+from configs.configs import FFORMA_CONFIGS, FEATURE_CONFIGS, NEURALSTACK_CONFIGS, NEURALAVERAGE_CONFIGS, DEEPFFORMA_CONFIGS
 from sklearn.metrics import r2_score
 from sklearn.decomposition import PCA
 from sklearn.manifold import locally_linear_embedding
@@ -36,9 +37,8 @@ def record_comination_owas(comb_owa, total_owa):
 def forecast_error_reduction_mechanism(y_hat, y_hat_base_models, threshold=0.4):
     averaging_preds = y_hat_base_models.sum(axis=1) / y_hat_base_models.shape[1]
 
-
-def run(df_info, df_pred_data,
-        seasonality,
+def run(df_info, df_pred_data, y_train_df, ts_pred_data,
+        seasonality,        
         k_folds=10, n_runs=5, optimizing_runs=0, combination_type='FFORMA', hyper_search_run=False):
     
     overall_combination_loss_median = 0.0
@@ -62,8 +62,6 @@ def run(df_info, df_pred_data,
         esrnn_run_loss = 0.0
 
         kfoldings = make_kfolds(df_info, df_pred_data, k_folds, seed=run_num)
-        #Changed this to only do the first fold of the first run as per paper for ypers
-        from joblib import Parallel, delayed
 
         for test_fold_num in range(1 if hyper_search_run else k_folds):
             # print(test_fold_num)
@@ -98,15 +96,9 @@ def run(df_info, df_pred_data,
                 train_feats = train_set.copy()
                 train_feats = train_feats.drop_duplicates('unique_id').set_index('unique_id')
                 train_feats = train_feats.filter(regex='^mf_', axis=1)
-          #  temp = train_set.copy()
-         #   temp = temp.drop_duplicates('unique_id').set_index('unique_id')
-          #  train_feats['cat'] = temp['category'].values
                 test_feats = test_set.copy()
                 test_feats = test_feats.drop_duplicates('unique_id').set_index('unique_id')
                 test_feats = test_feats.filter(regex='^mf_', axis=1)
-           # temp = test_set.copy()
-          #  temp = temp.drop_duplicates('unique_id').set_index('unique_id')
-          #  test_feats['cat'] = temp['category'].values
             else:
                 train_feats = train_set.copy()
                 train_feats = train_feats.set_index('unique_id')
@@ -114,11 +106,6 @@ def run(df_info, df_pred_data,
                 test_feats = test_set.copy()
                 test_feats = test_feats.set_index('unique_id')
                 test_feats = test_feats.filter(regex='^mf_', axis=1)
-
-           # train_feats = train_feats[FEATURE_CONFIGS[seasonality]]
-          #  test_feats = test_feats[FEATURE_CONFIGS[seasonality]]
-            #TODO: select cols in list
-            #exclude_list = ['mf_variation', 'mf_summation']#['mf_nperiods','mf_seasonal_period', 'mf_variation', 'mf_summation']
 
             # Compute training errors
             train_errors = train_set.copy()
@@ -169,7 +156,27 @@ def run(df_info, df_pred_data,
                                                                 return_averages=False)
                 test_df = test_fforma_df
 
-            elif combination_type in ['Neural Averaging','Neural Averaging 2']:                
+            elif combination_type == 'Deep FFORMA':
+                deepforma = DeepFFORMA(DEEPFFORMA_CONFIGS[seasonality],
+                                  train_feats.shape[1],
+                                  train_errors.shape[1]
+                                  )
+
+                deepforma.fit(ts_pred_data, train_feats, train_errors)
+                deepforma_preds = deepforma.predict(ts_pred_data, test_feats, y_hat_base_models_test)
+                # NAVG SCORE
+                test_deepforma_df = test_set.copy()
+                test_deepforma_df['y_hat'] = deepforma_preds['navg_prediction'].values
+                predictions_df = test_deepforma_df[['unique_id', 'y_hat', 'ds']]
+                combination_owa, _, _ = evaluate_prediction_owa(predictions_df=predictions_df,
+                                                                y_train_df=y_train_df,
+                                                                y_test_df=test_deepforma_df,
+                                                                naive2_seasonality=seas_dict[seasonality]['seasonality'],
+                                                                return_averages=False)
+                test_df = test_deepforma_df
+
+
+            elif combination_type in ['Neural Averaging','Neural Averaging 2']:
                 if combination_type== 'Neural Averaging':
                     navg = ModelAveragingMLP(NEURALAVERAGE_CONFIGS[seasonality],train_feats.shape[1],
                                              train_errors.shape[1], style=combination_type)
@@ -266,7 +273,9 @@ def run(df_info, df_pred_data,
                                                                 y_test_df=test_nbeats_df,
                                                                 naive2_seasonality=seas_dict[seasonality]['seasonality'],
                                                                 return_averages=False)
-                test_df = test_nbeats_df                
+                test_df = test_nbeats_df      
+            else:
+                raise NotImplementedError()          
 
             total_combination_owa = record_comination_owas(combination_owa, total_combination_owa)
             combination_owa_median = np.median(combination_owa)
@@ -316,7 +325,7 @@ def run(df_info, df_pred_data,
     print(combination_type + ' Mean OWA: {} '.format(np.round(overall_combination_loss_mean / n_runs, 3)))
     print(combination_type + ' Median OWA: {} '.format(np.round(overall_combination_loss_median / n_runs, 3)))
     print(combination_type + ' R2 loss: {} '.format(np.round(overall_combination_loss_r2 / n_runs, 3)))
-
+    
     df_results.loc[f"{combination_type}-{seasonality}","mean"] = overall_combination_loss_mean / n_runs
     df_results.loc[f"{combination_type}-{seasonality}","median"] = overall_combination_loss_median / n_runs
     df_results.loc[f"{combination_type}-{seasonality}","std"] = overall_combination_loss_std / n_runs
@@ -327,15 +336,28 @@ def run(df_info, df_pred_data,
         np.save(f, total_combination_owa)
 
 if __name__ == '__main__':
-    for seasonality in ['Hourly','Daily','Weekly','Monthly','Quarterly','Yearly'][3:4]:
+    for seasonality in ['Hourly','Daily','Weekly','Quarterly','Yearly','Monthly']:
         # seasonality = 'Daily'
-        X_train_df, y_train_df, X_test_df, y_test_df = m4_parser(seasonality, 'data', 'forecasts', load_existing_dataframes=True)
-        for combination_type in ['nbeats','FFORMA','FFORMS','Model Averaging','Neural Averaging 2','Neural Stacking'][0:1]:
-            run(df_info=X_test_df,                
+        print(f"Loading Data {seasonality}")
+
+        _, y_train_df, X_test_df, y_test_df = m4_parser(seasonality, 'data', 'forecasts', load_existing_dataframes=True)
+        _, _, _, _, ts_pred_data = m4_ts_parser(seasonality, "data")
+                
+        for combination_type in ['nbeats',
+                                 'FFORMA',
+                                 'FFORMS',
+                                 'Model Averaging',
+                                 'Neural Averaging 2',
+                                 'Neural Stacking',
+                                 'Deep FFORMA'][6:]:
+            print(f"Starting {seasonality} {combination_type}")
+            run(df_info=X_test_df,
                 df_pred_data=y_test_df,
+                y_train_df=y_train_df,
+                ts_pred_data=ts_pred_data,
                 seasonality=seasonality,
                 optimizing_runs=0,
                 combination_type=combination_type,
-                n_runs=5,
+                n_runs=1,
                 k_folds=10,
                 hyper_search_run=False)
