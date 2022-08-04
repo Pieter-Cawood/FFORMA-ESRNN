@@ -12,6 +12,8 @@ dependencies:
   - seaborn
   - statsmodels
   - matplotlib
+  - cudnn
+  - cudatoolkit
   - pip:
     # - absl-py==0.15.0
     # - antropy==0.1.4
