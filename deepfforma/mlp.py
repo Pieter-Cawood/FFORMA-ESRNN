@@ -37,6 +37,7 @@ class SumZero(tf.keras.constraints.Constraint):
 
 def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
     inputs = tf.keras.Input((length, num_channel))  # The input tensor
+    xo = inputs
     
     #Moving average and lagging head
     xt = inputs
@@ -44,9 +45,9 @@ def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
                                 padding='valid', 
                                 kernel_initializer=SumOne.init,
                                 kernel_constraint=SumOne(),
-                                use_bias=False)(xt)
-    xt = tf.keras.layers.LayerNormalization(axis=1)(xt)
+                                use_bias=False)(xt)    
     xt = tf.keras.layers.ZeroPadding1D(padding=(seasons-1,seasons-1))(xt)
+    xt = tf.keras.layers.LayerNormalization()(xt)
     xt = tf.keras.layers.SpatialDropout1D(dropout_rate)(xt)
 
     #Differencing head
@@ -57,11 +58,11 @@ def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
                                 kernel_initializer=SumZero.init,
                                 kernel_constraint=SumZero(),
                                 use_bias=False)(xs)
-    xs = tf.keras.layers.LayerNormalization(axis=1)(xs)
+    xs = tf.keras.layers.LayerNormalization()(xs)
     # xs = tf.keras.layers.ZeroPadding1D(padding=(seasons,seasons))(xs)
     xs = tf.keras.layers.SpatialDropout1D(dropout_rate)(xs)
 
-    x = tf.keras.layers.Concatenate(axis=2)([xt,xs])
+    x = tf.keras.layers.Concatenate(axis=2)([xo,xt,xs])
     
     # Block 1
     x = Conv_1D_Block(x, num_filters * (2 ** 0), 3)
@@ -111,11 +112,11 @@ def is_train(x, y):
 
 recover = lambda x,y: y
 
-l2_normalise = tf.keras.layers.UnitNormalization()
+# l2_normalise = tf.keras.layers.UnitNormalization()
 # z_normalise = tf.keras.layers.LayerNormalization()
 
 def preprocessing(inp, max_length, min_length):
-    inp = l2_normalise(inp)
+    # inp = l2_normalise(inp)
     inp = inp if max_length is None else inp[-max_length:]
     pad_size = min_length - tf.shape(inp)[0] if min_length > tf.shape(inp)[0] else 0
     paddings = [[0, pad_size]]
