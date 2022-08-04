@@ -22,8 +22,7 @@ class SumOne(tf.keras.constraints.Constraint):
     @classmethod
     def init(cls, shape, dtype):
         w = tf.random.normal(shape, dtype=dtype)
-        w = w / tf.reduce_sum(w)
-        return w
+        return w / tf.reduce_sum(w)
 
 class SumZero(tf.keras.constraints.Constraint):
     def __call__(self, w):
@@ -32,12 +31,22 @@ class SumZero(tf.keras.constraints.Constraint):
     @classmethod
     def init(cls, shape, dtype):
         w = tf.random.normal(shape, dtype=dtype)
-        w = w - tf.reduce_mean(w)
-        return w
+        return w - tf.reduce_mean(w)
+
+class SoftMax(tf.keras.constraints.Constraint):
+    def __call__(self, w):
+        exp = tf.exp(w)
+        return exp / tf.reduce_sum(exp)
+
+    @classmethod
+    def init(cls, shape, dtype):
+        w = tf.random.normal(shape, dtype=dtype)
+        exp = tf.exp(w)
+        return exp / tf.reduce_sum(exp)
 
 def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
     inputs = tf.keras.Input((length, num_channel))  # The input tensor
-    xo = inputs
+    xi = inputs
     
     #Moving average and lagging head
     xt = inputs
@@ -47,22 +56,27 @@ def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
                                 kernel_constraint=SumOne(),
                                 use_bias=False)(xt)    
     xt = tf.keras.layers.ZeroPadding1D(padding=(seasons-1,seasons-1))(xt)
-    xt = tf.keras.layers.LayerNormalization()(xt)
     xt = tf.keras.layers.SpatialDropout1D(dropout_rate)(xt)
 
     #Differencing head
-    xs = inputs
-    xs = tf.keras.layers.ZeroPadding1D(padding=(0,seasons-1))(xs)
-    xs = tf.keras.layers.Conv1D(num_filters, (seasons),
+    xr = inputs
+    xr = tf.keras.layers.ZeroPadding1D(padding=(0,seasons-1))(xr)
+    xr = tf.keras.layers.Conv1D(num_filters, (seasons),
                                 padding='valid',
                                 kernel_initializer=SumZero.init,
                                 kernel_constraint=SumZero(),
-                                use_bias=False)(xs)
-    xs = tf.keras.layers.LayerNormalization()(xs)
-    # xs = tf.keras.layers.ZeroPadding1D(padding=(seasons,seasons))(xs)
+                                use_bias=False)(xr)                                
+    xs = xr 
+    xr = tf.keras.layers.LayerNormalization(epsilon=1e-8, center=False, scale=False)(xr)    
+    xr = tf.keras.layers.SpatialDropout1D(dropout_rate)(xr)
+
+    #Seasonal Components
+    xs = tf.keras.layers.Add()([xs, xt])
+    xs = tf.keras.layers.Subtract()([xi, xs])
+    xs = tf.keras.layers.LayerNormalization(epsilon=1e-8, center=False, scale=False)(xs)
     xs = tf.keras.layers.SpatialDropout1D(dropout_rate)(xs)
 
-    x = tf.keras.layers.Concatenate(axis=2)([xo,xt,xs])
+    x = tf.keras.layers.Concatenate(axis=2)([xt,xr,xi])
     
     # Block 1
     x = Conv_1D_Block(x, num_filters * (2 ** 0), 3)
@@ -95,8 +109,8 @@ def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
     x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
     
-    x = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
-    # x = tf.keras.layers.GlobalAveragePooling1D()(x) #Global Averaging replaces Flatten
+    # x = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
+    x = tf.keras.layers.GlobalAveragePooling1D()(x) #Global Averaging replaces Flatten
     # xe= x    
     
     # x = tf.keras.layers.Concatenate(axis=1)([xe])
@@ -112,11 +126,11 @@ def is_train(x, y):
 
 recover = lambda x,y: y
 
-# l2_normalise = tf.keras.layers.UnitNormalization()
+l2_normalise = tf.keras.layers.UnitNormalization()
 # z_normalise = tf.keras.layers.LayerNormalization()
 
 def preprocessing(inp, max_length, min_length):
-    # inp = l2_normalise(inp)
+    inp = l2_normalise(inp)
     inp = inp if max_length is None else inp[-max_length:]
     pad_size = min_length - tf.shape(inp)[0] if min_length > tf.shape(inp)[0] else 0
     paddings = [[0, pad_size]]

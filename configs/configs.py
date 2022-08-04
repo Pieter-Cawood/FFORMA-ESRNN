@@ -25,7 +25,7 @@ DEEPFFORMA_CONFIGS = {
             learn_rate=1e-4,
             batch_size=92,
             epochs=250,
-            max_length=4197, #95
+            max_length=365*5,  #4197, #95
             stop_grow_count=40
         )),
 
