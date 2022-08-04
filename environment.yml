@@ -4,7 +4,7 @@ channels:
   - defaults
 dependencies:
   - python==3.8
-  - lightgbm==2.3
+  - lightgbm
   - pip
   - pandas
   - numpy
