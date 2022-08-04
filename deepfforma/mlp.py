@@ -70,13 +70,13 @@ def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
     xr = tf.keras.layers.LayerNormalization(epsilon=1e-8, center=False, scale=False)(xr)    
     xr = tf.keras.layers.SpatialDropout1D(dropout_rate)(xr)
 
-    #Seasonal Components
+    #Seasonal components
     xs = tf.keras.layers.Add()([xs, xt])
     xs = tf.keras.layers.Subtract()([xi, xs])
     xs = tf.keras.layers.LayerNormalization(epsilon=1e-8, center=False, scale=False)(xs)
     xs = tf.keras.layers.SpatialDropout1D(dropout_rate)(xs)
 
-    x = tf.keras.layers.Concatenate(axis=2)([xt,xr,xi])
+    x = tf.keras.layers.Concatenate(axis=2)([xt,xr,xs])
     
     # Block 1
     x = Conv_1D_Block(x, num_filters * (2 ** 0), 3)
