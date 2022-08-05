@@ -112,8 +112,8 @@ def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
     x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
     
-    # x = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
-    x = tf.keras.layers.GlobalAveragePooling1D()(x) #Global Averaging replaces Flatten
+    x = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
+    # x = tf.keras.layers.GlobalAveragePooling1D()(x) #Global Averaging replaces Flatten
     # xe= x    
     
     # x = tf.keras.layers.Concatenate(axis=1)([xe])
