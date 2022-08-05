@@ -71,12 +71,12 @@ def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
     xr = tf.keras.layers.SpatialDropout1D(dropout_rate)(xr)
 
     #Seasonal components
-    xs = tf.keras.layers.Add()([xs, xt])
-    xs = tf.keras.layers.Subtract()([xi, xs])
-    xs = tf.keras.layers.LayerNormalization(epsilon=1e-8, center=False, scale=False)(xs)
-    xs = tf.keras.layers.SpatialDropout1D(dropout_rate)(xs)
+    # xs = tf.keras.layers.Add()([xs, xt])
+    # xs = tf.keras.layers.Subtract()([xi, xs])
+    # xs = tf.keras.layers.LayerNormalization(epsilon=1e-8, center=False, scale=False)(xs)
+    # xs = tf.keras.layers.SpatialDropout1D(dropout_rate)(xs)
 
-    x = tf.keras.layers.Concatenate(axis=2)([xt,xr,xs])
+    # x = tf.keras.layers.Concatenate(axis=2)([xt,xr,xs])
     
     # Block 1
     x = Conv_1D_Block(x, num_filters * (2 ** 0), 3)
@@ -127,9 +127,10 @@ def is_train(x, y):
 recover = lambda x,y: y
 
 l2_normalise = tf.keras.layers.UnitNormalization()
-# z_normalise = tf.keras.layers.LayerNormalization()
+z_normalise = tf.keras.layers.LayerNormalization(epsilon=1e-8, center=False, scale=False)
 
 def preprocessing(inp, max_length, min_length):
+    inp = z_normalise(inp)
     inp = l2_normalise(inp)
     inp = inp if max_length is None else inp[-max_length:]
     pad_size = min_length - tf.shape(inp)[0] if min_length > tf.shape(inp)[0] else 0
