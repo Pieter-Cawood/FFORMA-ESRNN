@@ -62,7 +62,7 @@ DEEPFFORMA_CONFIGS = {
     'Quarterly': dict(
         model_parameters=dict(
             min_length=32,
-            vgg_filters=32,
+            vgg_filters=24,
             dropout_rate=0.1,
             seasons=4
         ),
@@ -71,7 +71,7 @@ DEEPFFORMA_CONFIGS = {
             batch_size=92,
             epochs=150,
             max_length=267, #99
-            stop_grow_count=40
+            stop_grow_count=20
         )),
 
     'Yearly': dict(

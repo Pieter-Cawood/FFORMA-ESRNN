@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 from operator import itemgetter
 
-
 def fforma_loss(y_OWA, y_wm):
     return tf.reduce_sum(y_wm*y_OWA, axis=-1)
 
@@ -46,7 +45,7 @@ class SoftMax(tf.keras.constraints.Constraint):
 
 def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
     inputs = tf.keras.Input((length, num_channel))  # The input tensor
-    xi = inputs
+    # xi = inputs
     
     #Moving average and lagging head
     xt = inputs
@@ -54,9 +53,15 @@ def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
                                 padding='valid', 
                                 kernel_initializer=SumOne.init,
                                 kernel_constraint=SumOne(),
-                                use_bias=False)(xt)    
+                                use_bias=False)(xt)
+    # xtn = tf.keras.layers.LayerNormalization(axis=1,
+    #                                         epsilon=1e-8, 
+    #                                         center=False, 
+    #                                         scale=False)(xt)
+    # xtn = tf.keras.layers.ZeroPadding1D(padding=(seasons-1,seasons-1))(xtn)
     xt = tf.keras.layers.ZeroPadding1D(padding=(seasons-1,seasons-1))(xt)
     xt = tf.keras.layers.SpatialDropout1D(dropout_rate)(xt)
+    # xtn = tf.keras.layers.SpatialDropout1D(dropout_rate)(xtn)
 
     #Differencing head
     xr = inputs
@@ -65,21 +70,24 @@ def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
                                 padding='valid',
                                 kernel_initializer=SumZero.init,
                                 kernel_constraint=SumZero(),
-                                use_bias=False)(xr)                                
-    xs = xr 
-    xr = tf.keras.layers.LayerNormalization(axis=1, 
-                                            epsilon=1e-8, 
-                                            center=False, 
-                                            scale=False)(xr)
+                                use_bias=False)(xr)
+    # xrn = tf.keras.layers.LayerNormalization(axis=1,
+    #                                         epsilon=1e-8, 
+    #                                         center=False, 
+    #                                         scale=False)(xr)
     xr = tf.keras.layers.SpatialDropout1D(dropout_rate)(xr)
+    # xrn = tf.keras.layers.SpatialDropout1D(dropout_rate)(xrn)
 
     #Seasonal components
     # xs = tf.keras.layers.Add()([xs, xt])
     # xs = tf.keras.layers.Subtract()([xi, xs])
-    # xs = tf.keras.layers.LayerNormalization(epsilon=1e-8, center=False, scale=False)(xs)
+    # xs = tf.keras.layers.LayerNormalization(axis=1,
+    #                                         epsilon=1e-8, 
+    #                                         center=False, 
+    #                                         scale=False)(xs)
     # xs = tf.keras.layers.SpatialDropout1D(dropout_rate)(xs)
 
-    # x = tf.keras.layers.Concatenate(axis=2)([xt,xr,xs])
+    x = tf.keras.layers.Concatenate(axis=2)([xt,xr])#,xtn,xrn])
     
     # Block 1
     x = Conv_1D_Block(x, num_filters * (2 ** 0), 3)
@@ -112,11 +120,11 @@ def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
     x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
     
-    x = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
-    # x = tf.keras.layers.GlobalAveragePooling1D()(x) #Global Averaging replaces Flatten
+    # xm = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
+    xa = tf.keras.layers.GlobalAveragePooling1D()(x) #Global Averaging replaces Flatten
     # xe= x    
     
-    # x = tf.keras.layers.Concatenate(axis=1)([xe])
+    x = tf.keras.layers.Concatenate(axis=1)([xa])
 
     # Create model.    
     return inputs, x
@@ -129,16 +137,16 @@ def is_train(x, y):
 
 recover = lambda x,y: y
 
-l2_normalise = tf.keras.layers.UnitNormalization()
-z_normalise = tf.keras.layers.LayerNormalization(axis=1,
+l2_normalise = tf.keras.layers.UnitNormalization(axis=0)
+z_normalise = tf.keras.layers.LayerNormalization(axis=0,
                                                  epsilon=1e-8, 
                                                  center=False, 
                                                  scale=False)
 
 def preprocessing(inp, max_length, min_length):
+    inp = inp if max_length is None else inp[-max_length:]
     inp = z_normalise(inp)
     inp = l2_normalise(inp)
-    inp = inp if max_length is None else inp[-max_length:]
     pad_size = min_length - tf.shape(inp)[0] if min_length > tf.shape(inp)[0] else 0
     paddings = [[0, pad_size]]
     inp = tf.pad(inp, paddings)
@@ -251,7 +259,7 @@ class DeepFFORMA():
                        validation_data=validate_dataset,
                        validation_freq=1,
                        use_multiprocessing=True,
-                       workers=36                       
+                       workers=16                       
                        )
 
         self.fitted = True
