@@ -67,7 +67,10 @@ def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
                                 kernel_constraint=SumZero(),
                                 use_bias=False)(xr)                                
     xs = xr 
-    xr = tf.keras.layers.LayerNormalization(epsilon=1e-8, center=False, scale=False)(xr)    
+    xr = tf.keras.layers.LayerNormalization(axis=1, 
+                                            epsilon=1e-8, 
+                                            center=False, 
+                                            scale=False)(xr)
     xr = tf.keras.layers.SpatialDropout1D(dropout_rate)(xr)
 
     #Seasonal components
@@ -127,7 +130,10 @@ def is_train(x, y):
 recover = lambda x,y: y
 
 l2_normalise = tf.keras.layers.UnitNormalization()
-z_normalise = tf.keras.layers.LayerNormalization(epsilon=1e-8, center=False, scale=False)
+z_normalise = tf.keras.layers.LayerNormalization(axis=1,
+                                                 epsilon=1e-8, 
+                                                 center=False, 
+                                                 scale=False)
 
 def preprocessing(inp, max_length, min_length):
     inp = z_normalise(inp)
