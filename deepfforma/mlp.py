@@ -71,10 +71,10 @@ def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
                                 kernel_initializer=SumZero.init,
                                 kernel_constraint=SumZero(),
                                 use_bias=False)(xr)
-    # xrn = tf.keras.layers.LayerNormalization(axis=1,
-    #                                         epsilon=1e-8, 
-    #                                         center=False, 
-    #                                         scale=False)(xr)
+    xr = tf.keras.layers.LayerNormalization(axis=1,
+                                            epsilon=1e-8, 
+                                            center=False, 
+                                            scale=False)(xr)
     xr = tf.keras.layers.SpatialDropout1D(dropout_rate)(xr)
     # xrn = tf.keras.layers.SpatialDropout1D(dropout_rate)(xrn)
 
@@ -120,11 +120,11 @@ def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
     x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
     
-    # xm = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
-    xa = tf.keras.layers.GlobalAveragePooling1D()(x) #Global Averaging replaces Flatten
+    xm = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
+    # xa = tf.keras.layers.GlobalAveragePooling1D()(x) #Global Averaging replaces Flatten
     # xe= x    
     
-    x = tf.keras.layers.Concatenate(axis=1)([xa])
+    x = tf.keras.layers.Concatenate(axis=1)([xm])
 
     # Create model.    
     return inputs, x
