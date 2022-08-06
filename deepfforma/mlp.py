@@ -49,7 +49,7 @@ def RESNET(length, num_channel, num_filters, dropout_rate, min_length, seasons):
 
 def TemporalHeads(length, num_channel, num_filters, dropout_rate, seasons):
     inputs = tf.keras.Input((length, num_channel))  # The input tensor
-    # xi = inputs
+    xi = inputs
     
     #Moving average and lagging head
     xt = inputs
@@ -58,15 +58,11 @@ def TemporalHeads(length, num_channel, num_filters, dropout_rate, seasons):
                                 kernel_initializer=SumOne.init,
                                 kernel_constraint=SumOne(),
                                 use_bias=False)(xt)
-    # xt = tf.keras.layers.LayerNormalization(axis=1,
-    #                                         epsilon=1e-8, 
-    #                                         center=False, 
-    #                                         scale=False)(xt)
+    xt = tf.keras.layers.LayerNormalization(axis=1,
+                                            epsilon=1e-8, 
+                                            center=False, 
+                                            scale=False)(xt)
     # xtn = tf.keras.layers.ZeroPadding1D(padding=(seasons-1,seasons-1))(xtn)
-    # xt = tf.keras.layers.LayerNormalization(axis=1,
-    #                                         epsilon=1e-8, 
-    #                                         center=False, 
-    #                                         scale=False)(xt)
     # xt = tf.keras.layers.UnitNormalization(axis=1)(xt)
     xt = tf.keras.layers.ZeroPadding1D(padding=(seasons-1,seasons-1))(xt)
     xt = tf.keras.layers.SpatialDropout1D(dropout_rate)(xt)
@@ -80,11 +76,11 @@ def TemporalHeads(length, num_channel, num_filters, dropout_rate, seasons):
                                 kernel_initializer=SumZero.init,
                                 kernel_constraint=SumZero(),
                                 use_bias=False)(xr)
-    # xr = tf.keras.layers.LayerNormalization(axis=1,
-    #                                         epsilon=1e-8, 
-    #                                         center=False, 
-    #                                         scale=False)(xr)
-    xr = tf.keras.layers.UnitNormalization(axis=1)(xr)
+    # xr = tf.keras.layers.UnitNormalization(axis=1)(xr)
+    xr = tf.keras.layers.LayerNormalization(axis=1,
+                                            epsilon=1e-8, 
+                                            center=False, 
+                                            scale=False)(xr)
     xr = tf.keras.layers.SpatialDropout1D(dropout_rate)(xr)
     # xrn = tf.keras.layers.SpatialDropout1D(dropout_rate)(xrn)
 
@@ -97,11 +93,7 @@ def TemporalHeads(length, num_channel, num_filters, dropout_rate, seasons):
     #                                         scale=False)(xs)
     # xs = tf.keras.layers.SpatialDropout1D(dropout_rate)(xs)
 
-    x = tf.keras.layers.Concatenate(axis=2)([xt,xr])#,xtn,xrn])
-
-    return inputs, x
-
-def VGG_11(x, num_filters, min_length):
+    x = tf.keras.layers.Concatenate(axis=2)([xt,xr,xi])#,xtn,xrn])
     
     # Block 1
     x = Conv_1D_Block(x, num_filters * (2 ** 0), 3)
@@ -131,11 +123,11 @@ def VGG_11(x, num_filters, min_length):
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
     x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
     
-    # xm = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
-    xa = tf.keras.layers.GlobalAveragePooling1D()(x) #Global Averaging replaces Flatten
+    xm = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
+    # xa = tf.keras.layers.GlobalAveragePooling1D()(x) #Global Averaging replaces Flatten
     # xe= x    
     
-    x = tf.keras.layers.Concatenate(axis=1)([xa])
+    x = tf.keras.layers.Concatenate(axis=1)([xm])
 
     # Create model.    
     return x
@@ -156,7 +148,7 @@ z_normalise = tf.keras.layers.LayerNormalization(axis=0,
 
 def preprocessing(inp, max_length, min_length):
     inp = inp if max_length is None else inp[-max_length:]
-    inp = z_normalise(inp)
+    # inp = z_normalise(inp)
     inp = l2_normalise(inp)
     pad_size = min_length - tf.shape(inp)[0] if min_length > tf.shape(inp)[0] else 0
     paddings = [[0, pad_size]]
