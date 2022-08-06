@@ -58,10 +58,10 @@ def TemporalHeads(length, num_channel, num_filters, dropout_rate, seasons):
                                 kernel_initializer=SumOne.init,
                                 kernel_constraint=SumOne(),
                                 use_bias=False)(xt)
-    xt = tf.keras.layers.LayerNormalization(axis=1,
-                                            epsilon=1e-8, 
-                                            center=False, 
-                                            scale=False)(xt)
+    # xt = tf.keras.layers.LayerNormalization(axis=1,
+    #                                         epsilon=1e-8, 
+    #                                         center=False, 
+    #                                         scale=False)(xt)
     # xtn = tf.keras.layers.ZeroPadding1D(padding=(seasons-1,seasons-1))(xtn)
     # xt = tf.keras.layers.LayerNormalization(axis=1,
     #                                         epsilon=1e-8, 
@@ -131,11 +131,11 @@ def VGG_11(x, num_filters, min_length):
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
     x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
     
-    xm = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
-    # xa = tf.keras.layers.GlobalAveragePooling1D()(x) #Global Averaging replaces Flatten
+    # xm = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
+    xa = tf.keras.layers.GlobalAveragePooling1D()(x) #Global Averaging replaces Flatten
     # xe= x    
     
-    x = tf.keras.layers.Concatenate(axis=1)([xm])
+    x = tf.keras.layers.Concatenate(axis=1)([xa])
 
     # Create model.    
     return x
