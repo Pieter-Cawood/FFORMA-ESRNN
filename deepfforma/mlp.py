@@ -43,7 +43,11 @@ class SoftMax(tf.keras.constraints.Constraint):
         exp = tf.exp(w)
         return exp / tf.reduce_sum(exp)
 
-def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
+
+def RESNET(length, num_channel, num_filters, dropout_rate, min_length, seasons):
+    pass
+
+def TemporalHeads(length, num_channel, num_filters, dropout_rate, seasons):
     inputs = tf.keras.Input((length, num_channel))  # The input tensor
     # xi = inputs
     
@@ -54,11 +58,16 @@ def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
                                 kernel_initializer=SumOne.init,
                                 kernel_constraint=SumOne(),
                                 use_bias=False)(xt)
-    # xtn = tf.keras.layers.LayerNormalization(axis=1,
+    xt = tf.keras.layers.LayerNormalization(axis=1,
+                                            epsilon=1e-8, 
+                                            center=False, 
+                                            scale=False)(xt)
+    # xtn = tf.keras.layers.ZeroPadding1D(padding=(seasons-1,seasons-1))(xtn)
+    # xt = tf.keras.layers.LayerNormalization(axis=1,
     #                                         epsilon=1e-8, 
     #                                         center=False, 
     #                                         scale=False)(xt)
-    # xtn = tf.keras.layers.ZeroPadding1D(padding=(seasons-1,seasons-1))(xtn)
+    # xt = tf.keras.layers.UnitNormalization(axis=1)(xt)
     xt = tf.keras.layers.ZeroPadding1D(padding=(seasons-1,seasons-1))(xt)
     xt = tf.keras.layers.SpatialDropout1D(dropout_rate)(xt)
     # xtn = tf.keras.layers.SpatialDropout1D(dropout_rate)(xtn)
@@ -71,10 +80,11 @@ def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
                                 kernel_initializer=SumZero.init,
                                 kernel_constraint=SumZero(),
                                 use_bias=False)(xr)
-    xr = tf.keras.layers.LayerNormalization(axis=1,
-                                            epsilon=1e-8, 
-                                            center=False, 
-                                            scale=False)(xr)
+    # xr = tf.keras.layers.LayerNormalization(axis=1,
+    #                                         epsilon=1e-8, 
+    #                                         center=False, 
+    #                                         scale=False)(xr)
+    xr = tf.keras.layers.UnitNormalization(axis=1)(xr)
     xr = tf.keras.layers.SpatialDropout1D(dropout_rate)(xr)
     # xrn = tf.keras.layers.SpatialDropout1D(dropout_rate)(xrn)
 
@@ -88,25 +98,26 @@ def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
     # xs = tf.keras.layers.SpatialDropout1D(dropout_rate)(xs)
 
     x = tf.keras.layers.Concatenate(axis=2)([xt,xr])#,xtn,xrn])
+
+    return inputs, x
+
+def VGG_11(x, num_filters, min_length):
     
     # Block 1
     x = Conv_1D_Block(x, num_filters * (2 ** 0), 3)
     if min_length >= 10:
         x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
-    # xa = tf.keras.layers.GlobalMaxPooling1D()(x)
 
     # Block 2
     x = Conv_1D_Block(x, num_filters * (2 ** 1), 3)
     if min_length >= 16:
         x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
-    # xb = tf.keras.layers.GlobalMaxPooling1D()(x)
 
     # Block 3
     x = Conv_1D_Block(x, num_filters * (2 ** 2), 3)
     x = Conv_1D_Block(x, num_filters * (2 ** 2), 3)
     if min_length >= 24:
         x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
-    # xc = tf.keras.layers.GlobalMaxPooling1D()(x)
 
     # Block 4
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
@@ -127,7 +138,7 @@ def VGG_11(length, num_channel, num_filters, dropout_rate, min_length, seasons):
     x = tf.keras.layers.Concatenate(axis=1)([xm])
 
     # Create model.    
-    return inputs, x
+    return x
 
 def is_test(x, y):
     return x % 10 == 0
@@ -179,8 +190,10 @@ class DeepFFORMA():
 
         #The Time Series Model
         # inputs_ts = tf.keras.Input((None, ))  # The input tensor
-        # outputs_ts = tf.keras.layers.Layer()(inputs_ts) 
-        inputs_ts, outputs_ts = VGG_11(None, 1, vgg_filters, dropout_rate, self.min_length, self.seasons)
+        # outputs_ts = tf.keras.layers.Layer()(inputs_ts)         
+        inputs_ts, outputs_ts = TemporalHeads(None, 1, vgg_filters, dropout_rate, self.seasons)
+        outputs_ts = VGG_11(outputs_ts, vgg_filters, self.min_length)
+
         self.features = tf.keras.Model(inputs_ts, outputs_ts)
         for _i in range(len(layer_units)):
             outputs_ts = tf.keras.layers.Dense(layer_units[_i],activation='relu')(outputs_ts)
