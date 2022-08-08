@@ -49,7 +49,7 @@ def RESNET(length, num_channel, num_filters, dropout_rate, min_length, seasons):
 
 def TemporalHeads(length, num_channel, num_filters, dropout_rate, seasons):
     inputs = tf.keras.Input((length, num_channel))  # The input tensor
-    # xi = inputs
+    xi = inputs
     
     #Moving average and lagging head
     xt = inputs
@@ -58,39 +58,28 @@ def TemporalHeads(length, num_channel, num_filters, dropout_rate, seasons):
                                 kernel_initializer=SumOne.init,
                                 kernel_constraint=SumOne(),
                                 use_bias=False)(xt)
-    # xt = tf.keras.layers.LayerNormalization(axis=1, 
-    #                                         epsilon=1e-8, 
-    #                                         center=False, 
-    #                                         scale=False)(xt)
-    xt = tf.keras.layers.UnitNormalization(axis=1)(xt)
+    xt = tf.keras.layers.LayerNormalization(axis=1, 
+                                            epsilon=1e-8, 
+                                            center=False, 
+                                            scale=False)(xt)
     xt = tf.keras.layers.ZeroPadding1D(padding=(seasons-1,seasons-1))(xt)
     xt = tf.keras.layers.SpatialDropout1D(dropout_rate)(xt)
 
     #Differencing head
-    xr = inputs
-    xr = tf.keras.layers.ZeroPadding1D(padding=(0,seasons-1))(xr)
+    xr = inputs    
     xr = tf.keras.layers.Conv1D(num_filters, (seasons),
                                 padding='valid',
                                 kernel_initializer=SumZero.init,
                                 kernel_constraint=SumZero(),
                                 use_bias=False)(xr)
-    # xr = tf.keras.layers.LayerNormalization(axis=1,
-    #                                         epsilon=1e-8, 
-    #                                         center=False, 
-    #                                         scale=False)(xr)
-    xr = tf.keras.layers.UnitNormalization(axis=1)(xr)
+    xr = tf.keras.layers.LayerNormalization(axis=1,
+                                            epsilon=1e-8, 
+                                            center=False, 
+                                            scale=False)(xr)
+    xr = tf.keras.layers.ZeroPadding1D(padding=(0,seasons-1))(xr)
     xr = tf.keras.layers.SpatialDropout1D(dropout_rate)(xr)
 
-    #Seasonal components
-    # xs = tf.keras.layers.Add()([xs, xt])
-    # xs = tf.keras.layers.Subtract()([xi, xs])
-    # xs = tf.keras.layers.LayerNormalization(axis=1,
-    #                                         epsilon=1e-8, 
-    #                                         center=False, 
-    #                                         scale=False)(xs)
-    # xs = tf.keras.layers.SpatialDropout1D(dropout_rate)(xs)
-
-    x = tf.keras.layers.Concatenate(axis=2)([xt,xr])#,xtn,xrn])
+    x = tf.keras.layers.Concatenate(axis=2)([xt,xr,xi])
 
     return inputs, x
 
@@ -124,11 +113,9 @@ def VGG_11(x, num_filters, min_length):
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
     x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
     
-    # xm = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
-    xa = tf.keras.layers.GlobalAveragePooling1D()(x) #Global Averaging replaces Flatten
-    # xe= x    
+    xm = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
     
-    x = tf.keras.layers.Concatenate(axis=1)([xa])
+    x = tf.keras.layers.Concatenate(axis=1)([xm])
 
     # Create model.    
     return x
@@ -224,7 +211,7 @@ class DeepFFORMA():
         # train_errors = (1/(train_errors+1e-9))/(1/(train_errors+1e-9)).sum(axis=1).to_frame().values
         # train_errors = train_errors/train_errors.sum(axis=1).to_frame().values
 
-        gen_series =  [(preprocessing(ts, self.max_length, self.min_length), trg)
+        gen_series = [(preprocessing(ts, self.max_length, self.min_length), trg)
                             for ts, trg in 
                                 zip(itemgetter(*train_errors_ID)(ts_pred_data),
                                 # train_feats.loc[train_errors.index].values,
