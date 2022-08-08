@@ -106,7 +106,6 @@ def VGG_11(x, num_filters, min_length):
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
     if min_length >= 32:
         x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
-    # xd = tf.keras.layers.GlobalMaxPooling1D()(x)
 
     # Block 5
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
