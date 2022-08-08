@@ -112,9 +112,7 @@ def VGG_11(x, num_filters, min_length):
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
     x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
     
-    xm = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
-    
-    x = tf.keras.layers.Concatenate(axis=1)([xm])
+    x = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
 
     # Create model.    
     return x
@@ -127,7 +125,6 @@ def is_train(x, y):
 
 recover = lambda x,y: y
 
-l2_normalise = tf.keras.layers.UnitNormalization(axis=0)
 z_normalise = tf.keras.layers.LayerNormalization(axis=0,
                                                  epsilon=1e-8, 
                                                  center=False, 
@@ -136,7 +133,6 @@ z_normalise = tf.keras.layers.LayerNormalization(axis=0,
 def preprocessing(inp, max_length, min_length):
     inp = inp if max_length is None else inp[-max_length:]
     inp = z_normalise(inp)
-    # inp = l2_normalise(inp)
     pad_size = min_length - tf.shape(inp)[0] if min_length > tf.shape(inp)[0] else 0
     paddings = [[0, pad_size]]
     inp = tf.pad(inp, paddings)
