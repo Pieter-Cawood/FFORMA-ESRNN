@@ -58,20 +58,14 @@ def TemporalHeads(length, num_channel, num_filters, dropout_rate, seasons):
                                 kernel_initializer=SumOne.init,
                                 kernel_constraint=SumOne(),
                                 use_bias=False)(xt)
-    # xt = tf.keras.layers.LayerNormalization(axis=1,
-    #                                         epsilon=1e-8, 
-    #                                         center=False, 
-    #                                         scale=False)(xt)
-    # xtn = tf.keras.layers.ZeroPadding1D(padding=(seasons-1,seasons-1))(xtn)
     xt = tf.keras.layers.LayerNormalization(axis=1,
                                             epsilon=1e-8, 
                                             center=False, 
                                             scale=False)(xt)
-    xt = tf.keras.layers.UnitNormalization(axis=1)(xt)
+    # xt = tf.keras.layers.UnitNormalization(axis=1)(xt)
     xt = tf.keras.layers.ZeroPadding1D(padding=(seasons-1,seasons-1))(xt)
     xt = tf.keras.layers.SpatialDropout1D(dropout_rate)(xt)
-    # xtn = tf.keras.layers.SpatialDropout1D(dropout_rate)(xtn)
-
+ 
     #Differencing head
     xr = inputs
     xr = tf.keras.layers.ZeroPadding1D(padding=(0,seasons-1))(xr)
@@ -86,8 +80,7 @@ def TemporalHeads(length, num_channel, num_filters, dropout_rate, seasons):
                                             scale=False)(xr)
     # xr = tf.keras.layers.UnitNormalization(axis=1)(xr)
     xr = tf.keras.layers.SpatialDropout1D(dropout_rate)(xr)
-    # xrn = tf.keras.layers.SpatialDropout1D(dropout_rate)(xrn)
-
+ 
     #Seasonal components
     # xs = tf.keras.layers.Add()([xs, xt])
     # xs = tf.keras.layers.Subtract()([xi, xs])
@@ -156,8 +149,8 @@ z_normalise = tf.keras.layers.LayerNormalization(axis=0,
 
 def preprocessing(inp, max_length, min_length):
     inp = inp if max_length is None else inp[-max_length:]
-    inp = z_normalise(inp)
-    inp = l2_normalise(inp)
+    # inp = z_normalise(inp)
+    # inp = l2_normalise(inp)
     pad_size = min_length - tf.shape(inp)[0] if min_length > tf.shape(inp)[0] else 0
     paddings = [[0, pad_size]]
     inp = tf.pad(inp, paddings)
@@ -231,7 +224,7 @@ class DeepFFORMA():
         # train_errors = (1/(train_errors+1e-9))/(1/(train_errors+1e-9)).sum(axis=1).to_frame().values
         # train_errors = train_errors/train_errors.sum(axis=1).to_frame().values
 
-        gen_series =  [(preprocessing(ts, self.max_length, self.min_length), trg)
+        gen_series = [(preprocessing(ts, self.max_length, self.min_length), trg)
                             for ts, trg in 
                                 zip(itemgetter(*train_errors_ID)(ts_pred_data),
                                 # train_feats.loc[train_errors.index].values,
