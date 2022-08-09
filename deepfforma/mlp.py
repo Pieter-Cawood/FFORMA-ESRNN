@@ -113,16 +113,21 @@ def make_layer(x, planes, blocks, stride=1, name=None):
 
 def resnet(x, blocks_per_layer, num_filters, n_features, min_length):
     x = tf.keras.layers.ZeroPadding1D(padding=3, name='conv1_pad')(x)
-    x = tf.keras.layers.Conv1D(filters=num_filters, kernel_size=7, strides=2, use_bias=False, kernel_initializer="he_normal", name='conv1')(x)
+    adstride = 2 if min_length >= 1568 else 1
+    x = tf.keras.layers.Conv1D(filters=num_filters, kernel_size=7, strides=adstride, use_bias=False, kernel_initializer="he_normal", name='conv1')(x)
     x = tf.keras.layers.BatchNormalization(epsilon=1e-5, name='bn1')(x)
     x = tf.keras.layers.ReLU(name='relu1')(x)
     x = tf.keras.layers.ZeroPadding1D(padding=1, name='maxpool_pad')(x)
-    x = tf.keras.layers.MaxPool1D(pool_size=3, strides=2, name='maxpool')(x)
+    if min_length >= 784:
+        x = tf.keras.layers.MaxPooling1D(pool_size=3, strides=2, name='maxpool')(x)
 
     x = make_layer(x, num_filters * (2 ** 0), blocks_per_layer[0], name='layer1')
-    x = make_layer(x, num_filters * (2 ** 1), blocks_per_layer[1], stride=2, name='layer2')
-    x = make_layer(x, num_filters * (2 ** 2), blocks_per_layer[2], stride=2, name='layer3')
-    x = make_layer(x, num_filters * (2 ** 3), blocks_per_layer[3], stride=2, name='layer4')
+    adstride = 2 if min_length >= 392 else 1
+    x = make_layer(x, num_filters * (2 ** 1), blocks_per_layer[1], stride=adstride, name='layer2')
+    adstride = 2 if min_length >= 196 else 1
+    x = make_layer(x, num_filters * (2 ** 2), blocks_per_layer[2], stride=adstride, name='layer3')
+    adstride = 2 if min_length >= 98 else 1
+    x = make_layer(x, num_filters * (2 ** 3), blocks_per_layer[3], stride=adstride, name='layer4')
 
     x = tf.keras.layers.GlobalMaxPooling1D(name='avgpool')(x)
     x = tf.keras.layers.Dense(units=n_features, name='fc')(x)
