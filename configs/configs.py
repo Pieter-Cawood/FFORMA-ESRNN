@@ -60,7 +60,7 @@ DEEPFFORMA_CONFIGS = {
             batch_size=92,
             epochs=150,
             max_length=450, #95
-            stop_grow_count=40
+            stop_grow_count=20
         )),
 
     'Quarterly': dict(
@@ -92,7 +92,7 @@ DEEPFFORMA_CONFIGS = {
             batch_size=92,
             epochs=150,
             max_length=81, #99
-            stop_grow_count=40
+            stop_grow_count=20
         ))
 }
 
