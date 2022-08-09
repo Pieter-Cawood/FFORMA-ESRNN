@@ -65,9 +65,9 @@ DEEPFFORMA_CONFIGS = {
 
     'Quarterly': dict(
         model_parameters=dict(
-            min_length=32,
-            vgg_filters=None,
-            res_filters=32,
+            min_length=224,
+            vgg_filters=64,
+            res_filters=None,
             dropout_rate=0.1,
             seasons=4
         ),
