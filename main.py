@@ -369,4 +369,4 @@ if __name__ == '__main__':
                 combination_type=combination_type,
                 n_runs=1,
                 k_folds=10,
-                hyper_search_run=True)
+                hyper_search_run=False)

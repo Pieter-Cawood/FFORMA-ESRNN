@@ -36,8 +36,8 @@ class SoftMax(tf.keras.constraints.Constraint):
         exp = tf.exp(w)
         return exp / tf.reduce_sum(exp)
 
-def TemporalHeads(length, num_channel, num_filters, dropout_rate, seasons):
-    inputs = tf.keras.Input((length, num_channel))  # The input tensor
+def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
+    # inputs = tf.keras.Input((length, num_channel))  # The input tensor
     xi = inputs
     
     #Moving average and lagging head
@@ -113,20 +113,20 @@ def make_layer(x, planes, blocks, stride=1, name=None):
 
 def resnet(x, blocks_per_layer, num_filters, n_features, min_length):
     x = tf.keras.layers.ZeroPadding1D(padding=3, name='conv1_pad')(x)
-    adstride = 2 if min_length >= 1568 else 1
+    adstride = 2 if min_length >= 14 else 1
     x = tf.keras.layers.Conv1D(filters=num_filters, kernel_size=7, strides=adstride, use_bias=False, kernel_initializer="he_normal", name='conv1')(x)
     x = tf.keras.layers.BatchNormalization(epsilon=1e-5, name='bn1')(x)
     x = tf.keras.layers.ReLU(name='relu1')(x)
     x = tf.keras.layers.ZeroPadding1D(padding=1, name='maxpool_pad')(x)
-    if min_length >= 784:
+    if min_length >= 28:
         x = tf.keras.layers.MaxPooling1D(pool_size=3, strides=2, name='maxpool')(x)
 
     x = make_layer(x, num_filters * (2 ** 0), blocks_per_layer[0], name='layer1')
-    adstride = 2 if min_length >= 392 else 1
+    adstride = 2 if min_length >= 56 else 1
     x = make_layer(x, num_filters * (2 ** 1), blocks_per_layer[1], stride=adstride, name='layer2')
-    adstride = 2 if min_length >= 196 else 1
+    adstride = 2 if min_length >= 112 else 1
     x = make_layer(x, num_filters * (2 ** 2), blocks_per_layer[2], stride=adstride, name='layer3')
-    adstride = 2 if min_length >= 98 else 1
+    adstride = 2 if min_length >= 224 else 1
     x = make_layer(x, num_filters * (2 ** 3), blocks_per_layer[3], stride=adstride, name='layer4')
 
     x = tf.keras.layers.GlobalMaxPooling1D(name='avgpool')(x)
@@ -151,30 +151,30 @@ def VGG_11(x, num_filters, n_features, min_length, dropout_rate):
     
     # Block 1
     x = Conv_1D_Block(x, num_filters * (2 ** 0), 3)
-    if min_length >= 1568:
+    if min_length >= 14:
         x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
 
     # Block 2
     x = Conv_1D_Block(x, num_filters * (2 ** 1), 3)
-    if min_length >= 784:
+    if min_length >= 28:
         x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
 
     # Block 3
     x = Conv_1D_Block(x, num_filters * (2 ** 2), 3)
     x = Conv_1D_Block(x, num_filters * (2 ** 2), 3)
-    if min_length >= 392:
+    if min_length >= 56:
         x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
 
     # Block 4
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
-    if min_length >= 196:
+    if min_length >= 112:
         x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
 
     # Block 5
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
-    if min_length >= 98:
+    if min_length >= 224:
         x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
     
     x = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
@@ -225,40 +225,32 @@ class DeepFFORMA():
         self.batch_size = self.mc['train_parameters']['batch_size']
         self.max_length  = self.mc['train_parameters']['max_length']
 
-        # layer_units_iid = [(vgg_filters * (2 ** 3)),(vgg_filters * (2 ** 3))]
-        
-        #The Features Model
-        # inputs_iid = tf.keras.Input((n_features, ))  # The input tensor        
-        # outputs_iid = tf.keras.layers.Layer()(inputs_iid)
-        # outputs_iid = tf.keras.layers.Dropout(dropout_rate)(inputs_iid)
-        # for _i in range(len(layer_units_iid)):
-        #     outputs_iid = tf.keras.layers.Dense(layer_units_iid[_i],activation='relu')(outputs_iid)
-        #     outputs_iid = tf.keras.layers.BatchNormalization()(outputs_iid)
-        # outputs_iid = tf.keras.layers.Dense(n_models, activation='tanh')(outputs_iid)
+        inputs_ts = tf.keras.Input((None, 1))  # The input tensor
 
-        #The Time Series Model
-        # inputs_ts = tf.keras.Input((None, ))  # The input tensor
-        # outputs_ts = tf.keras.layers.Layer()(inputs_ts)                 
         if vgg_filters is not None:
-            inputs_ts, outputs_ts = TemporalHeads(None, 1, vgg_filters, dropout_rate, self.seasons)
+            if self.seasons == 1:
+                outputs_ts = tf.keras.layers.Layer()(inputs_ts)
+            else:
+                inputs_ts, outputs_ts = TemporalHeads(inputs_ts, vgg_filters, dropout_rate, self.seasons)
             outputs_ts = VGG_11(outputs_ts, n_features, vgg_filters, self.min_length, dropout_rate)            
         elif res_filters is not None:
-            inputs_ts, outputs_ts = TemporalHeads(None, 1, res_filters, dropout_rate, self.seasons)
+            if self.seasons == 1:
+                outputs_ts = tf.keras.layers.Layer()(inputs_ts)
+            else:
+                inputs_ts, outputs_ts = TemporalHeads(inputs_ts, res_filters, dropout_rate, self.seasons)
             outputs_ts = resnet10(outputs_ts, n_features, res_filters, self.min_length)
         else:
             raise NotImplemented()
         
         self.features = tf.keras.Model(inputs_ts, outputs_ts)
 
-        #Join the two models together
-        outputs = outputs_ts #tf.keras.layers.Concatenate(axis=1)([outputs_ts])
-        outputs_ts = tf.keras.layers.BatchNormalization()(outputs)
-        outputs = tf.keras.layers.Dense(n_models, 
+        outputs_ts = tf.keras.layers.BatchNormalization()(outputs_ts)
+        outputs_ts = tf.keras.layers.Dense(n_models, 
                                         use_bias=False,
-                                        activation='softmax')(outputs)
+                                        activation='softmax')(outputs_ts)
 
         self.optimizer = Adam(lr=lr)
-        self.model = tf.keras.Model(inputs=inputs_ts, outputs=outputs)
+        self.model = tf.keras.Model(inputs=inputs_ts, outputs=outputs_ts)
         self.model.compile(loss=fforma_loss, optimizer=self.optimizer)
         # self.model.compile(loss=tf.keras.losses.CategoricalCrossentropy(), 
         #                    optimizer=self.optimizer)

@@ -17,7 +17,7 @@ DEEPFFORMA_CONFIGS = {
     
     'Daily': dict(
         model_parameters=dict(            
-            min_length=93,
+            min_length=111, #1
             vgg_filters=None,
             res_filters=24,
             dropout_rate=0.1,
@@ -33,7 +33,7 @@ DEEPFFORMA_CONFIGS = {
 
     'Weekly': dict(
         model_parameters=dict(
-            min_length=80,
+            min_length=80, #1
             vgg_filters=None,
             res_filters=16,
             dropout_rate=0.1,
@@ -49,7 +49,7 @@ DEEPFFORMA_CONFIGS = {
     
     'Monthly': dict(
         model_parameters=dict(
-            min_length=42,
+            min_length=66, #1
             vgg_filters=32,
             res_filters=None,
             dropout_rate=0.1,
@@ -65,7 +65,7 @@ DEEPFFORMA_CONFIGS = {
 
     'Quarterly': dict(
         model_parameters=dict(
-            min_length=16,
+            min_length=24, #1
             vgg_filters=64,
             res_filters=None,
             dropout_rate=0.1,
@@ -81,9 +81,9 @@ DEEPFFORMA_CONFIGS = {
 
     'Yearly': dict(
         model_parameters=dict(            
-            min_length=13,
-            vgg_filters=None,
-            res_filters=64,
+            min_length=13, #1
+            vgg_filters=24,
+            res_filters=None,
             dropout_rate=0.1,
             seasons=1
         ),
