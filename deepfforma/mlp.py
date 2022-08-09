@@ -39,6 +39,8 @@ class SoftMax(tf.keras.constraints.Constraint):
 def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
     # inputs = tf.keras.Input((length, num_channel))  # The input tensor
     xi = inputs
+
+    seasons = 2 if seasons == 1 else seasons
     
     #Moving average and lagging head
     xt = inputs
@@ -228,16 +230,10 @@ class DeepFFORMA():
         inputs_ts = tf.keras.Input((None, 1))  # The input tensor
 
         if vgg_filters is not None:
-            if self.seasons == 1:
-                outputs_ts = tf.keras.layers.Layer()(inputs_ts)
-            else:
-                inputs_ts, outputs_ts = TemporalHeads(inputs_ts, vgg_filters, dropout_rate, self.seasons)
+            inputs_ts, outputs_ts = TemporalHeads(inputs_ts, vgg_filters, dropout_rate, self.seasons)
             outputs_ts = VGG_11(outputs_ts, n_features, vgg_filters, self.min_length, dropout_rate)            
         elif res_filters is not None:
-            if self.seasons == 1:
-                outputs_ts = tf.keras.layers.Layer()(inputs_ts)
-            else:
-                inputs_ts, outputs_ts = TemporalHeads(inputs_ts, res_filters, dropout_rate, self.seasons)
+            inputs_ts, outputs_ts = TemporalHeads(inputs_ts, res_filters, dropout_rate, self.seasons)
             outputs_ts = resnet10(outputs_ts, n_features, res_filters, self.min_length)
         else:
             raise NotImplemented()
