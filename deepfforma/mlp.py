@@ -113,7 +113,7 @@ def make_layer(x, planes, blocks, stride=1, name=None):
 
 def resnet(x, blocks_per_layer, num_filters, n_features, min_length):
     x = tf.keras.layers.ZeroPadding1D(padding=3, name='conv1_pad')(x)
-    x = tf.keras.layers.Conv1D(filters=num_filters, kernel_size=1, strides=1, use_bias=False, kernel_initializer="he_normal", name='conv1')(x)
+    x = tf.keras.layers.Conv1D(filters=num_filters, kernel_size=7, strides=2, use_bias=False, kernel_initializer="he_normal", name='conv1')(x)
     x = tf.keras.layers.BatchNormalization(epsilon=1e-5, name='bn1')(x)
     x = tf.keras.layers.ReLU(name='relu1')(x)
     x = tf.keras.layers.ZeroPadding1D(padding=1, name='maxpool_pad')(x)
@@ -146,25 +146,21 @@ def VGG_11(x, num_filters, n_features, min_length, dropout_rate):
     
     # Block 1
     x = Conv_1D_Block(x, num_filters * (2 ** 0), 3)
-    if min_length >= 10:
-        x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
+    x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
 
     # Block 2
     x = Conv_1D_Block(x, num_filters * (2 ** 1), 3)
-    if min_length >= 16:
-        x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
+    x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
 
     # Block 3
     x = Conv_1D_Block(x, num_filters * (2 ** 2), 3)
     x = Conv_1D_Block(x, num_filters * (2 ** 2), 3)
-    if min_length >= 24:
-        x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
+    x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
 
     # Block 4
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
-    x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
-    if min_length >= 32:
-        x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
+    x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)    
+    x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
 
     # Block 5
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
