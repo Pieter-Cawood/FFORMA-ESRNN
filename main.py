@@ -156,7 +156,7 @@ def run(df_info, df_pred_data, y_train_df, ts_pred_data,
                                                                 return_averages=False)
                 test_df = test_fforma_df
 
-            elif combination_type == 'Deep FFORMA':
+            elif combination_type == 'Deep FFORMA':                                
                 deepforma = DeepFFORMA(DEEPFFORMA_CONFIGS[seasonality],
                                   train_feats.shape[1],
                                   train_errors.shape[1]
@@ -325,11 +325,20 @@ def run(df_info, df_pred_data, y_train_df, ts_pred_data,
     print(combination_type + ' Mean OWA: {} '.format(np.round(overall_combination_loss_mean / n_runs, 3)))
     print(combination_type + ' Median OWA: {} '.format(np.round(overall_combination_loss_median / n_runs, 3)))
     print(combination_type + ' R2 loss: {} '.format(np.round(overall_combination_loss_r2 / n_runs, 3)))
-    
+
     df_results.loc[f"{combination_type}-{seasonality}","mean"] = overall_combination_loss_mean / n_runs
     df_results.loc[f"{combination_type}-{seasonality}","median"] = overall_combination_loss_median / n_runs
     df_results.loc[f"{combination_type}-{seasonality}","std"] = overall_combination_loss_std / n_runs
-    df_results.to_pickle(f"results/{combination_type}_{seasonality[0]}.pd")
+    if combination_type == "Deep FFORMA":
+        if DEEPFFORMA_CONFIGS[seasonality]['model_parameters']['vgg_filters'] is not None:
+            nn = "VGG"
+        elif DEEPFFORMA_CONFIGS[seasonality]['model_parameters']['res_filters'] is not None:
+            nn = "RESNET"
+        else:
+            raise NotImplemented()
+        df_results.to_pickle(f"results/{combination_type}_{nn}_{seasonality[0]}.pd")
+    else:
+        df_results.to_pickle(f"results/{combination_type}_{seasonality[0]}.pd")
 
     # SAVE combo OWAs to file
     with open('results/'+combination_type+'_'+seasonality[0]+'.npy', 'wb') as f:

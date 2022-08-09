@@ -2,7 +2,8 @@ DEEPFFORMA_CONFIGS = {
     'Hourly': dict(
         model_parameters=dict(            
             min_length=32,
-            vgg_filters=16,
+            vgg_filters=None,
+            res_filters=16,
             dropout_rate=0.1,
             seasons=24
         ),
@@ -17,7 +18,8 @@ DEEPFFORMA_CONFIGS = {
     'Daily': dict(
         model_parameters=dict(            
             min_length=32,
-            vgg_filters=16,
+            vgg_filters=None,
+            res_filters=24,
             dropout_rate=0.1,
             seasons=7
         ),
@@ -25,14 +27,15 @@ DEEPFFORMA_CONFIGS = {
             learn_rate=1e-4,
             batch_size=92,
             epochs=250,
-            max_length=365*5,  #4197, #95
+            max_length=4197, #95
             stop_grow_count=40
         )),
 
     'Weekly': dict(
         model_parameters=dict(
             min_length=32,
-            vgg_filters=16,
+            vgg_filters=None,
+            res_filters=16,
             dropout_rate=0.1,
             seasons=52
         ),
@@ -48,6 +51,7 @@ DEEPFFORMA_CONFIGS = {
         model_parameters=dict(
             min_length=32,
             vgg_filters=32,
+            res_filters=None,
             dropout_rate=0.1,
             seasons=12
         ),
@@ -61,8 +65,9 @@ DEEPFFORMA_CONFIGS = {
 
     'Quarterly': dict(
         model_parameters=dict(
-            min_length=32,
-            vgg_filters=32,
+            min_length=224,
+            vgg_filters=None,
+            res_filters=32,
             dropout_rate=0.1,
             seasons=4
         ),
@@ -78,6 +83,7 @@ DEEPFFORMA_CONFIGS = {
         model_parameters=dict(            
             min_length=32,
             vgg_filters=32,
+            res_filters=None,
             dropout_rate=0.1,
             seasons=1
         ),

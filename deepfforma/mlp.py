@@ -7,13 +7,6 @@ from operator import itemgetter
 def fforma_loss(y_OWA, y_wm):
     return tf.reduce_sum(y_wm*y_OWA, axis=-1)
 
-def Conv_1D_Block(x, model_width, kernel):
-    # 1D Convolutional Block with BatchNormalization
-    x = tf.keras.layers.Conv1D(model_width, kernel, padding='same', kernel_initializer="he_normal")(x)
-    x = tf.keras.layers.BatchNormalization()(x)
-    x = tf.keras.layers.Activation('relu')(x)
-    return x
-
 class SumOne(tf.keras.constraints.Constraint):
     def __call__(self, w):
         return w / tf.reduce_sum(w)
@@ -42,10 +35,6 @@ class SoftMax(tf.keras.constraints.Constraint):
         w = tf.random.normal(shape, dtype=dtype)
         exp = tf.exp(w)
         return exp / tf.reduce_sum(exp)
-
-
-def RESNET(length, num_channel, num_filters, dropout_rate, min_length, seasons):
-    pass
 
 def TemporalHeads(length, num_channel, num_filters, dropout_rate, seasons):
     inputs = tf.keras.Input((length, num_channel))  # The input tensor
@@ -83,7 +72,77 @@ def TemporalHeads(length, num_channel, num_filters, dropout_rate, seasons):
 
     return inputs, x
 
-def VGG_11(x, num_filters, min_length):
+# Adapted from https://github.com/pytorch/vision/blob/v0.4.0/torchvision/models/resnet.py
+
+def conv1x3(x, out_planes, stride=1, name=None):
+    x = tf.keras.layers.ZeroPadding1D(padding=1, name=f'{name}_pad')(x)
+    x = tf.keras.layers.Conv1D(filters=out_planes, kernel_size=3, strides=stride, use_bias=False, kernel_initializer="he_normal", name=name)(x)
+    return tf.keras.layers.BatchNormalization(epsilon=1e-5, name=f'{name}.bn')(x)
+
+def basic_block(x, planes, stride=1, downsample=None, name=None):
+    identity = x
+
+    out = conv1x3(x, planes, stride=stride, name=f'{name}.conv1')
+    out = tf.keras.layers.ReLU(name=f'{name}.relu1')(out)
+
+    out = conv1x3(out, planes, name=f'{name}.conv2')    
+
+    if downsample is not None:
+        for layer in downsample:
+            identity = layer(identity)
+
+    out = tf.keras.layers.Add(name=f'{name}.add')([identity, out])
+    out = tf.keras.layers.ReLU(name=f'{name}.relu2')(out)
+
+    return out
+
+def make_layer(x, planes, blocks, stride=1, name=None):
+    downsample = None
+    inplanes = x.shape[2]
+    if stride != 1 or inplanes != planes:
+        downsample = [
+            tf.keras.layers.Conv1D(filters=planes, kernel_size=1, strides=stride, use_bias=False, kernel_initializer="he_normal", name=f'{name}.0.downsample.0'),
+            tf.keras.layers.BatchNormalization(epsilon=1e-5, name=f'{name}.0.downsample.1'),
+        ]
+
+    x = basic_block(x, planes, stride, downsample, name=f'{name}.0')
+    for i in range(1, blocks):
+        x = basic_block(x, planes, name=f'{name}.{i}')
+
+    return x
+
+def resnet(x, blocks_per_layer, num_filters, n_features, min_length):
+    x = tf.keras.layers.ZeroPadding1D(padding=3, name='conv1_pad')(x)
+    x = tf.keras.layers.Conv1D(filters=num_filters, kernel_size=1, strides=1, use_bias=False, kernel_initializer="he_normal", name='conv1')(x)
+    x = tf.keras.layers.BatchNormalization(epsilon=1e-5, name='bn1')(x)
+    x = tf.keras.layers.ReLU(name='relu1')(x)
+    x = tf.keras.layers.ZeroPadding1D(padding=1, name='maxpool_pad')(x)
+    x = tf.keras.layers.MaxPool1D(pool_size=3, strides=2, name='maxpool')(x)
+
+    x = make_layer(x, num_filters * (2 ** 0), blocks_per_layer[0], name='layer1')
+    x = make_layer(x, num_filters * (2 ** 1), blocks_per_layer[1], stride=2, name='layer2')
+    x = make_layer(x, num_filters * (2 ** 2), blocks_per_layer[2], stride=2, name='layer3')
+    x = make_layer(x, num_filters * (2 ** 3), blocks_per_layer[3], stride=2, name='layer4')
+
+    x = tf.keras.layers.GlobalMaxPooling1D(name='avgpool')(x)
+    x = tf.keras.layers.Dense(units=n_features, name='fc')(x)
+
+    return x
+
+def resnet10(x, num_filters, n_features, min_length, **kwargs):
+    return resnet(x, [1, 1, 1, 1], num_filters, n_features, min_length, **kwargs)
+
+def resnet18(x, num_filters, n_features, min_length, **kwargs):
+    return resnet(x, [2, 2, 2, 2], num_filters, n_features, min_length, **kwargs)
+
+def Conv_1D_Block(x, model_width, kernel):
+    # 1D Convolutional Block with BatchNormalization
+    x = tf.keras.layers.Conv1D(model_width, kernel, padding='same', kernel_initializer="he_normal")(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.Activation('relu')(x)
+    return x
+
+def VGG_11(x, num_filters, n_features, min_length, dropout_rate):
     
     # Block 1
     x = Conv_1D_Block(x, num_filters * (2 ** 0), 3)
@@ -115,6 +174,14 @@ def VGG_11(x, num_filters, min_length):
     x = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
 
     # Create model.    
+    layer_units = [(num_filters * (2 ** 3))*4, (num_filters * (2 ** 3))*4]
+    for _i in range(len(layer_units)):
+        x = tf.keras.layers.Dense(layer_units[_i],activation='relu')(x)
+        if dropout_rate:
+            x = tf.keras.layers.Dropout(dropout_rate)(x)
+    
+    x = tf.keras.layers.Dense(n_features,activation='linear')(x)
+    
     return x
 
 def is_test(x, y):
@@ -146,12 +213,12 @@ class DeepFFORMA():
         self.seasons  = self.mc['model_parameters']['seasons']
         self.min_length  = self.mc['model_parameters']['min_length']
         vgg_filters = self.mc['model_parameters']['vgg_filters']
+        res_filters = self.mc['model_parameters']['res_filters']
         dropout_rate = self.mc['model_parameters']['dropout_rate']
         lr = self.mc['train_parameters']['learn_rate']
         self.batch_size = self.mc['train_parameters']['batch_size']
         self.max_length  = self.mc['train_parameters']['max_length']
 
-        layer_units = [(vgg_filters * (2 ** 3))*4,(vgg_filters * (2 ** 3))*4]
         # layer_units_iid = [(vgg_filters * (2 ** 3)),(vgg_filters * (2 ** 3))]
         
         #The Features Model
@@ -165,20 +232,21 @@ class DeepFFORMA():
 
         #The Time Series Model
         # inputs_ts = tf.keras.Input((None, ))  # The input tensor
-        # outputs_ts = tf.keras.layers.Layer()(inputs_ts)         
-        inputs_ts, outputs_ts = TemporalHeads(None, 1, vgg_filters, dropout_rate, self.seasons)
-        outputs_ts = VGG_11(outputs_ts, vgg_filters, self.min_length)
-
+        # outputs_ts = tf.keras.layers.Layer()(inputs_ts)                 
+        if vgg_filters is not None:
+            inputs_ts, outputs_ts = TemporalHeads(None, 1, vgg_filters, dropout_rate, self.seasons)
+            outputs_ts = VGG_11(outputs_ts, n_features, vgg_filters, self.min_length, dropout_rate)            
+        elif res_filters is not None:
+            inputs_ts, outputs_ts = TemporalHeads(None, 1, res_filters, dropout_rate, self.seasons)
+            outputs_ts = resnet10(outputs_ts, n_features, res_filters, self.min_length)
+        else:
+            raise NotImplemented()
+        
         self.features = tf.keras.Model(inputs_ts, outputs_ts)
-        for _i in range(len(layer_units)):
-            outputs_ts = tf.keras.layers.Dense(layer_units[_i],activation='relu')(outputs_ts)
-            if dropout_rate:
-                outputs_ts = tf.keras.layers.Dropout(dropout_rate)(outputs_ts)
-        outputs_ts = tf.keras.layers.Dense(n_features,activation='linear')(outputs_ts)
-        outputs_ts = tf.keras.layers.BatchNormalization()(outputs_ts)
 
         #Join the two models together
         outputs = outputs_ts #tf.keras.layers.Concatenate(axis=1)([outputs_ts])
+        outputs_ts = tf.keras.layers.BatchNormalization()(outputs)
         outputs = tf.keras.layers.Dense(n_models, 
                                         use_bias=False,
                                         activation='softmax')(outputs)
