@@ -230,10 +230,16 @@ class DeepFFORMA():
         inputs_ts = tf.keras.Input((None, 1))  # The input tensor
 
         if vgg_filters is not None:
-            inputs_ts, outputs_ts = TemporalHeads(inputs_ts, vgg_filters, dropout_rate, self.seasons)
+            if self.seasons == 0:
+                outputs_ts = inputs_ts
+            else:
+                inputs_ts, outputs_ts = TemporalHeads(inputs_ts, vgg_filters, dropout_rate, self.seasons)
             outputs_ts = VGG_11(outputs_ts, n_features, vgg_filters, self.min_length, dropout_rate)            
         elif res_filters is not None:
-            inputs_ts, outputs_ts = TemporalHeads(inputs_ts, res_filters, dropout_rate, self.seasons)
+            if self.seasons == 0:
+                outputs_ts = inputs_ts
+            else:
+                inputs_ts, outputs_ts = TemporalHeads(inputs_ts, res_filters, dropout_rate, self.seasons)
             outputs_ts = resnet10(outputs_ts, n_features, res_filters, self.min_length)
         else:
             raise NotImplemented()
@@ -269,7 +275,7 @@ class DeepFFORMA():
         # train_errors = train_errors/train_errors.sum(axis=1).to_frame().values
 
         gen_series = [(preprocessing(ts, self.max_length, self.min_length), trg)
-                            for ts, trg in 
+                            for ts, trg in
                                 zip(itemgetter(*train_errors_ID)(ts_pred_data),
                                 # train_feats.loc[train_errors.index].values,
                                 train_errors.loc[train_errors.index].values)]
@@ -339,8 +345,5 @@ class DeepFFORMA():
         fforma_preds.name = 'navg_prediction'
         preds = pd.concat([y_hat_df, fforma_preds], axis=1)
         return preds
-
-
-
 
 

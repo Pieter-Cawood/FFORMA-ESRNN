@@ -21,7 +21,7 @@ DEEPFFORMA_CONFIGS = {
             vgg_filters=None,
             res_filters=24,
             dropout_rate=0.1,
-            seasons=7
+            seasons=0 #7
         ),
         train_parameters=dict(
             learn_rate=1e-4,
@@ -33,25 +33,25 @@ DEEPFFORMA_CONFIGS = {
 
     'Weekly': dict(
         model_parameters=dict(
-            min_length=112, #1 80
+            min_length=28, #1 80
             vgg_filters=None,
             res_filters=16,
             dropout_rate=0.1,
-            seasons=52
+            seasons=52 #52
         ),
         train_parameters=dict(
             learn_rate=1e-4,
             batch_size=92,
             epochs=500,
-            max_length=1568, #99 2283
+            max_length=2283, #99 2283
             stop_grow_count=80
         )),
     
     'Monthly': dict(
         model_parameters=dict(
-            min_length=112, #1 66
-            vgg_filters=32,
-            res_filters=None,
+            min_length=28, #1 66
+            vgg_filters=None,
+            res_filters=32,
             dropout_rate=0.1,
             seasons=12
         ),
