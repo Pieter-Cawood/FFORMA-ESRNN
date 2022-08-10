@@ -82,8 +82,8 @@ DEEPFFORMA_CONFIGS = {
     'Yearly': dict(
         model_parameters=dict(            
             min_length=14, #1 13
-            vgg_filters=None,
-            res_filters=24,
+            vgg_filters=24,
+            res_filters=None,
             dropout_rate=0.1,
             seasons=1
         ),
