@@ -345,11 +345,7 @@ def run(df_info, df_pred_data, y_train_df, ts_pred_data,
         np.save(f, total_combination_owa)
 
 if __name__ == '__main__':
-<<<<<<< HEAD
     for seasonality in ['Hourly','Daily','Weekly','Quarterly','Yearly','Monthly'][3:4]:
-=======
-    for seasonality in ['Hourly','Daily','Weekly','Yearly','Quarterly','Monthly'][1:2]:
->>>>>>> 2d854d38a1f8bb7655b915bc0684d5025ffcbc02
         # seasonality = 'Daily'
         print(f"Loading Data {seasonality}")
 
