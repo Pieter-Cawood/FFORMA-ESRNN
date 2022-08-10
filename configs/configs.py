@@ -33,7 +33,7 @@ DEEPFFORMA_CONFIGS = {
 
     'Weekly': dict(
         model_parameters=dict(
-            min_length=80, #1
+            min_length=112, #1 80
             vgg_filters=None,
             res_filters=16,
             dropout_rate=0.1,
@@ -49,7 +49,7 @@ DEEPFFORMA_CONFIGS = {
     
     'Monthly': dict(
         model_parameters=dict(
-            min_length=66, #1
+            min_length=112, #1 66
             vgg_filters=32,
             res_filters=None,
             dropout_rate=0.1,
@@ -66,7 +66,7 @@ DEEPFFORMA_CONFIGS = {
     'Quarterly': dict(
         model_parameters=dict(
             min_length=28, #1 24
-            vgg_filters=64,
+            vgg_filters=24,
             res_filters=None,
             dropout_rate=0.1,
             seasons=4
