@@ -30,9 +30,9 @@ DEEPFFORMA_CONFIGS = {
         train_parameters=dict(
             learn_rate=1e-4,
             batch_size=92,
-            epochs=500,
+            epochs=1000,
             max_length=960,
-            stop_grow_count=80
+            stop_grow_count=100
         )),
 
     'Daily': dict(
@@ -64,9 +64,9 @@ DEEPFFORMA_CONFIGS = {
         train_parameters=dict(
             learn_rate=1e-4,
             batch_size=92,
-            epochs=500,
+            epochs=1000,
             max_length=2283, #99-2283
-            stop_grow_count=80
+            stop_grow_count=100
         )),
     
     'Monthly': dict(
