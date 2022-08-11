@@ -1,10 +1,30 @@
 DEEPFFORMA_CONFIGS = {
+    #three considerations for the min length
+    #
+    #how many halvings are needed to get the season down to 1 point
+    #season-halvings: (17,34)-5, (9,16)-4, (5,8)-3, (3,4)-2, (1,2)-1 
+    #
+    #minimum points you want available at the end from the shortest ts    
+    #length-halvings-points: 288-5-9, 144-4-9, 72-3-9, 36-2-9, 18-1-9
+    #length-halvings-points: 256-5-8, 128-4-8, 64-3-8, 32-2-8, 16-1-8
+    #length-halvings-points: 224-5-7  112-4-7, 56-3-7, 28-2-7, 14-1-7
+    #length-halvings-points: 192-5-6   96-4-6, 48-3-6, 24-2-6, 12-1-6
+    #length-halvings-points: 160-5-5   80-4-5, 40-3-5, 20-2-5, 10-1-5
+    #length-halvings-points: 128-5-4   64-4-4, 32-3-4, 16-2-4,  8-1-4
+    #length-halvings-points:  96-5-3   48-4-3, 24-3-3, 12-2-3,  6-1-3
+    #length-halvings-points:  64-5-2   32-4-2, 16-3-2,  8-2-2,  4-1-2
+    #
+    #can convolution drift carry you the rest of the way
+    #resnet10: 11-22, vgg11: 8-16
+    #
+    #32/(2**5)=1, 16/(2**4)=1, 8/(2**3)=1, 4/(2**2)=1
     'Hourly': dict(
         model_parameters=dict(
-            min_length=224, # 1 700
+            min_length=32, # 1 700
+            halvings=5,
             vgg_filters=None,
             res_filters=16,
-            dropout_rate=0.1,
+            dropout_rate=0.2,
             seasons=24
         ),
         train_parameters=dict(
@@ -17,26 +37,28 @@ DEEPFFORMA_CONFIGS = {
 
     'Daily': dict(
         model_parameters=dict(
-            min_length=224, #1-111
+            min_length=16, #1%-111, 5%-177
+            halvings=4,
             vgg_filters=None,
-            res_filters=24,
-            dropout_rate=0.1,
-            seasons=0
+            res_filters=16,
+            dropout_rate=0.2,
+            seasons=7
         ),
         train_parameters=dict(
             learn_rate=1e-4,
             batch_size=92,
             epochs=250,
-            max_length=1568, #99-4315
+            max_length=4315, #99-4315
             stop_grow_count=40
         )),
 
     'Weekly': dict(
         model_parameters=dict(
-            min_length=56, #1-80
+            min_length=32, #0..15%-80, 20%-275
+            halvings=5,
             vgg_filters=None,
             res_filters=16,
-            dropout_rate=0.1,
+            dropout_rate=0.2,
             seasons=52 #52
         ),
         train_parameters=dict(
@@ -49,8 +71,9 @@ DEEPFFORMA_CONFIGS = {
     
     'Monthly': dict(
         model_parameters=dict(
-            min_length=112, #1-66
-            vgg_filters=32,
+            min_length=16, #1%-66, 5%-68, 15%-69, 20%-70
+            halvings=4,
+            vgg_filters=16,
             res_filters=None,
             dropout_rate=0.1,
             seasons=12
@@ -65,9 +88,10 @@ DEEPFFORMA_CONFIGS = {
     
     'Quarterly': dict(
         model_parameters=dict(
-            min_length=28, #1-24
+            min_length=8, #1%-24, 5%-35, 15%-46, 20%-55
+            halvings=2,
             vgg_filters=None,
-            res_filters=24,
+            res_filters=16,
             dropout_rate=0.1,
             seasons=4
         ),
@@ -81,8 +105,9 @@ DEEPFFORMA_CONFIGS = {
 
     'Yearly': dict(
         model_parameters=dict(
-            min_length=14, #1-13
-            vgg_filters=24,
+            min_length=4, #1-13
+            halvings=0,
+            vgg_filters=16,
             res_filters=None,
             dropout_rate=0.1,
             seasons=1

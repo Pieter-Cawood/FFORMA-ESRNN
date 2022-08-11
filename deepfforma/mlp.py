@@ -36,29 +36,26 @@ class SoftMax(tf.keras.constraints.Constraint):
         exp = tf.exp(w)
         return exp / tf.reduce_sum(exp)
 
-def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
-    # inputs = tf.keras.Input((length, num_channel))  # The input tensor
-    xi = inputs
-
-    seasons = 2 if seasons == 1 else seasons
-    
-    #Moving average and lagging head
+def TemporalHeads(inputs, num_filters, dropout_rate, seasons):    
+    # xi = inputs
+        
+    #Moving average head
     xt = inputs
-    xt = tf.keras.layers.Conv1D(num_filters, (seasons*2-1),
-                                padding='valid', 
-                                kernel_initializer=SumOne.init,
-                                kernel_constraint=SumOne(),
+    xt = tf.keras.layers.Conv1D(num_filters, (seasons+1),
+                                padding='valid',
+                                kernel_initializer=SoftMax.init,
+                                kernel_constraint=SoftMax(),
                                 use_bias=False)(xt)
     xt = tf.keras.layers.LayerNormalization(axis=1, 
                                             epsilon=1e-8, 
                                             center=False, 
                                             scale=False)(xt)
-    xt = tf.keras.layers.ZeroPadding1D(padding=(seasons-1,seasons-1))(xt)
+    # xt = tf.keras.layers.ZeroPadding1D(padding=(seasons-1,seasons-1))(xt)
     xt = tf.keras.layers.SpatialDropout1D(dropout_rate)(xt)
 
     #Differencing head
     xr = inputs    
-    xr = tf.keras.layers.Conv1D(num_filters, (seasons),
+    xr = tf.keras.layers.Conv1D(num_filters, (seasons+1),
                                 padding='valid',
                                 kernel_initializer=SumZero.init,
                                 kernel_constraint=SumZero(),
@@ -67,10 +64,10 @@ def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
                                             epsilon=1e-8, 
                                             center=False, 
                                             scale=False)(xr)
-    xr = tf.keras.layers.ZeroPadding1D(padding=(0,seasons-1))(xr)
+    # xr = tf.keras.layers.ZeroPadding1D(padding=(0,seasons-1))(xr)
     xr = tf.keras.layers.SpatialDropout1D(dropout_rate)(xr)
 
-    x = tf.keras.layers.Concatenate(axis=2)([xt,xr,xi])
+    x = tf.keras.layers.Concatenate(axis=2)([xt,xr])
 
     return inputs, x
 
@@ -113,22 +110,22 @@ def make_layer(x, planes, blocks, stride=1, name=None):
 
     return x
 
-def resnet(x, blocks_per_layer, num_filters, n_features, min_length):
+def resnet(x, blocks_per_layer, num_filters, n_features, halvings):
     x = tf.keras.layers.ZeroPadding1D(padding=3, name='conv1_pad')(x)
-    adstride = 2 if min_length >= 14 else 1
+    adstride = 2 if halvings >= 1 else 1
     x = tf.keras.layers.Conv1D(filters=num_filters, kernel_size=7, strides=adstride, use_bias=False, kernel_initializer="he_normal", name='conv1')(x)
     x = tf.keras.layers.BatchNormalization(epsilon=1e-5, name='bn1')(x)
     x = tf.keras.layers.ReLU(name='relu1')(x)
     x = tf.keras.layers.ZeroPadding1D(padding=1, name='maxpool_pad')(x)
-    if min_length >= 28:
+    if halvings >= 2:
         x = tf.keras.layers.MaxPooling1D(pool_size=3, strides=2, name='maxpool')(x)
 
     x = make_layer(x, num_filters * (2 ** 0), blocks_per_layer[0], name='layer1')
-    adstride = 2 if min_length >= 56 else 1
+    adstride = 2 if halvings >= 3 else 1
     x = make_layer(x, num_filters * (2 ** 1), blocks_per_layer[1], stride=adstride, name='layer2')
-    adstride = 2 if min_length >= 112 else 1
+    adstride = 2 if halvings >= 4 else 1
     x = make_layer(x, num_filters * (2 ** 2), blocks_per_layer[2], stride=adstride, name='layer3')
-    adstride = 2 if min_length >= 224 else 1
+    adstride = 2 if halvings >= 5 else 1
     x = make_layer(x, num_filters * (2 ** 3), blocks_per_layer[3], stride=adstride, name='layer4')
 
     x = tf.keras.layers.GlobalMaxPooling1D(name='avgpool')(x)
@@ -136,11 +133,11 @@ def resnet(x, blocks_per_layer, num_filters, n_features, min_length):
 
     return x
 
-def resnet10(x, num_filters, n_features, min_length, **kwargs):
-    return resnet(x, [1, 1, 1, 1], num_filters, n_features, min_length, **kwargs)
+def resnet10(x, num_filters, n_features, halvings, **kwargs):
+    return resnet(x, [1, 1, 1, 1], num_filters, n_features, halvings, **kwargs)
 
-def resnet18(x, num_filters, n_features, min_length, **kwargs):
-    return resnet(x, [2, 2, 2, 2], num_filters, n_features, min_length, **kwargs)
+def resnet18(x, num_filters, n_features, halvings, **kwargs):
+    return resnet(x, [2, 2, 2, 2], num_filters, n_features, halvings, **kwargs)
 
 def Conv_1D_Block(x, model_width, kernel):
     # 1D Convolutional Block with BatchNormalization
@@ -149,34 +146,34 @@ def Conv_1D_Block(x, model_width, kernel):
     x = tf.keras.layers.Activation('relu')(x)
     return x
 
-def VGG_11(x, num_filters, n_features, min_length, dropout_rate):
+def VGG_11(x, num_filters, n_features, halvings, dropout_rate):
     
     # Block 1
     x = Conv_1D_Block(x, num_filters * (2 ** 0), 3)
-    if min_length >= 14:
+    if halvings >= 1:
         x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
 
     # Block 2
     x = Conv_1D_Block(x, num_filters * (2 ** 1), 3)
-    if min_length >= 28:
+    if halvings >= 2:
         x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
 
     # Block 3
     x = Conv_1D_Block(x, num_filters * (2 ** 2), 3)
     x = Conv_1D_Block(x, num_filters * (2 ** 2), 3)
-    if min_length >= 56:
+    if halvings >= 3:
         x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
 
     # Block 4
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
-    if min_length >= 112:
+    if halvings >= 4:
         x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
 
     # Block 5
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
     x = Conv_1D_Block(x, num_filters * (2 ** 3), 3)
-    if min_length >= 224:
+    if halvings >= 5:
         x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
     
     x = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
@@ -215,32 +212,35 @@ def preprocessing(inp, max_length, min_length):
 
 class DeepFFORMA():
     def __init__(self, mc, n_features, n_models):
-        self.mc = mc
-        self.n_features = n_features
+        self.mc = mc                
         self.n_models = n_models
-        self.seasons  = self.mc['model_parameters']['seasons']
+
         self.min_length  = self.mc['model_parameters']['min_length']
+        self.batch_size = self.mc['train_parameters']['batch_size']
+        self.max_length  = self.mc['train_parameters']['max_length']
+        
+        seasons  = self.mc['model_parameters']['seasons']
+        halvings  = self.mc['model_parameters']['halvings']
         vgg_filters = self.mc['model_parameters']['vgg_filters']
         res_filters = self.mc['model_parameters']['res_filters']
         dropout_rate = self.mc['model_parameters']['dropout_rate']
         lr = self.mc['train_parameters']['learn_rate']
-        self.batch_size = self.mc['train_parameters']['batch_size']
-        self.max_length  = self.mc['train_parameters']['max_length']
+        
 
         inputs_ts = tf.keras.Input((None, 1))  # The input tensor
 
         if vgg_filters is not None:
-            if self.seasons == 0:
+            if seasons == 0:
                 outputs_ts = inputs_ts
             else:
-                inputs_ts, outputs_ts = TemporalHeads(inputs_ts, vgg_filters, dropout_rate, self.seasons)
-            outputs_ts = VGG_11(outputs_ts, n_features, vgg_filters, self.min_length, dropout_rate)            
+                inputs_ts, outputs_ts = TemporalHeads(inputs_ts, vgg_filters, dropout_rate, seasons)
+            outputs_ts = VGG_11(outputs_ts, n_features, vgg_filters, halvings, dropout_rate)            
         elif res_filters is not None:
-            if self.seasons == 0:
+            if seasons == 0:
                 outputs_ts = inputs_ts
             else:
-                inputs_ts, outputs_ts = TemporalHeads(inputs_ts, res_filters, dropout_rate, self.seasons)
-            outputs_ts = resnet10(outputs_ts, n_features, res_filters, self.min_length)
+                inputs_ts, outputs_ts = TemporalHeads(inputs_ts, res_filters, dropout_rate, seasons)
+            outputs_ts = resnet10(outputs_ts, n_features, res_filters, halvings)
         else:
             raise NotImplemented()
         
@@ -264,8 +264,7 @@ class DeepFFORMA():
 
         self.fitted = False
 
-    def fit(self, series, train_feats, errors):
-        batch_size = self.batch_size
+    def fit(self, series, train_feats, errors):        
         train_errors = errors
         ts_pred_data = series
         train_errors_ID = pd.to_numeric(train_errors.index.str[1:], errors='coerce')
@@ -294,13 +293,13 @@ class DeepFFORMA():
         validate_dataset = ds_series_validate.enumerate() \
                             .filter(is_test) \
                             .map(recover, num_parallel_calls=tf.data.AUTOTUNE) \
-                            .padded_batch(batch_size)
+                            .padded_batch(self.batch_size)
 
         train_dataset    = ds_series_train.enumerate() \
                             .filter(is_train) \
                             .map(recover, num_parallel_calls=tf.data.AUTOTUNE) \
                             .shuffle(self.batch_size*10) \
-                            .padded_batch(batch_size)
+                            .padded_batch(self.batch_size)
 
         es = tf.keras.callbacks.EarlyStopping(monitor='val_loss',
                                               patience=self.mc['train_parameters']['stop_grow_count'],
