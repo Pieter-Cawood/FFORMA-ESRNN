@@ -274,23 +274,23 @@ class DeepFFORMA():
         train_errors = errors
         ts_pred_data = series
         train_errors_ID = pd.to_numeric(train_errors.index.str[1:], errors='coerce')
-        
+
         # train_errors = pd.get_dummies( np.argmin(train_errors.values, axis=1) )
         # train_errors = (1/(train_errors+1e-9))/(1/(train_errors+1e-9)).sum(axis=1).to_frame().values
         # train_errors = train_errors/train_errors.sum(axis=1).to_frame().values
 
         gen_series_train    = [(ts, trg)
-                            for i, (ts, trg) in
-                                enumerate(
-                                    zip(itemgetter(*train_errors_ID)(ts_pred_data),
-                                    train_errors.loc[train_errors.index].values))
-                            if i % 10 != 0]
+                                for i, (ts, trg) in
+                                    enumerate(
+                                        zip(itemgetter(*train_errors_ID)(ts_pred_data),
+                                        train_errors.loc[train_errors.index].values))
+                                if i % 10 != 0]
         gen_series_validate = [(ts, trg)
-                            for i, (ts, trg) in
-                                enumerate(
-                                    zip(itemgetter(*train_errors_ID)(ts_pred_data),
-                                    train_errors.loc[train_errors.index].values))
-                            if i % 10 == 0]
+                                for i, (ts, trg) in
+                                    enumerate(
+                                        zip(itemgetter(*train_errors_ID)(ts_pred_data),
+                                        train_errors.loc[train_errors.index].values))
+                                if i % 10 == 0]
         
         ds_series_train = tf.data.Dataset.from_generator(
                 lambda: gen_series_train,
