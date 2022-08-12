@@ -304,11 +304,11 @@ class DeepFFORMA():
 
         preproc = preprocessing(self.max_length, self.min_length, self.augment)
 
-        validate_dataset = ds_series_validate.map(preproc, num_parallel_calls=tf.data.AUTOTUNE) \
-                            .padded_batch(self.batch_size)
-
         train_dataset    = ds_series_train.map(preproc, num_parallel_calls=tf.data.AUTOTUNE) \
                             .shuffle(self.batch_size*10) \
+                            .padded_batch(self.batch_size)
+        
+        validate_dataset = ds_series_validate.map(preproc, num_parallel_calls=tf.data.AUTOTUNE) \
                             .padded_batch(self.batch_size)
 
         es = tf.keras.callbacks.EarlyStopping(monitor='val_loss',
