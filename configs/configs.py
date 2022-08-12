@@ -69,7 +69,7 @@ DEEPFFORMA_CONFIGS = {
             epochs=1000,
             max_length=2283, #99-2283
             stop_grow_count=100,
-            augment=False
+            augment=True
         )),
     
     'Monthly': dict(
