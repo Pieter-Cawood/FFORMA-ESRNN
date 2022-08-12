@@ -208,13 +208,14 @@ def preprocessing(max_length, min_length, augment=False):
     def _preprocessing(inp, y):
         if augment:
             start = tf.random.uniform(shape=[], minval=0, maxval=tf.shape(inp)[0], dtype=tf.int32)
-            inp = inp if max_length is None else inp[start:start+max_length]
+            inp = inp if max_length is None else inp[start:start+max_length+1]
         else:
             inp = inp if max_length is None else inp[-max_length:]
         inp = z_normalise(inp)
         pad_size = min_length - tf.shape(inp)[0] if min_length > tf.shape(inp)[0] else 0
-        paddings = [[0, pad_size]]
-        inp = tf.pad(inp, paddings)
+        if pad_size > 0:
+            paddings = [[0, pad_size]]
+            inp = tf.pad(inp, paddings)
         return inp, y
     return _preprocessing
 
