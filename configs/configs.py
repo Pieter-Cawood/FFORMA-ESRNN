@@ -24,7 +24,7 @@ DEEPFFORMA_CONFIGS = {
             halvings=5,
             vgg_filters=None,
             res_filters=16,
-            dropout_rate=0.2,
+            dropout_rate=0.1,
             seasons=24
         ),
         train_parameters=dict(
@@ -41,7 +41,7 @@ DEEPFFORMA_CONFIGS = {
             halvings=4,
             vgg_filters=None,
             res_filters=16,
-            dropout_rate=0.2,
+            dropout_rate=0.1,
             seasons=7
         ),
         train_parameters=dict(
@@ -58,7 +58,7 @@ DEEPFFORMA_CONFIGS = {
             halvings=5,
             vgg_filters=None,
             res_filters=16,
-            dropout_rate=0.2,
+            dropout_rate=0.1,
             seasons=52 #52
         ),
         train_parameters=dict(
