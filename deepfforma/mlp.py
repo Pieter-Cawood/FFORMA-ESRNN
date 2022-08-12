@@ -39,17 +39,17 @@ class SoftMax(tf.keras.constraints.Constraint):
 def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
     inputs = tf.keras.layers.ZeroPadding1D(padding=(0,seasons))(inputs)
 
-    xi = inputs            
-    xi = tf.keras.layers.Conv1D(num_filters, (seasons+1),
-                                padding='valid',
-                                kernel_initializer=SumOne.init,
-                                kernel_constraint=SumOne(),
-                                use_bias=False)(xi)                                
-    xi = tf.keras.layers.LayerNormalization(axis=1, 
-                                            epsilon=1e-8, 
-                                            center=False, 
-                                            scale=False)(xi)                                            
-    xi = tf.keras.layers.SpatialDropout1D(dropout_rate)(xi)
+    # xi = inputs            
+    # xi = tf.keras.layers.Conv1D(num_filters, (seasons+1),
+    #                             padding='valid',
+    #                             kernel_initializer=SumOne.init,
+    #                             kernel_constraint=SumOne(),
+    #                             use_bias=False)(xi)                                
+    # xi = tf.keras.layers.LayerNormalization(axis=1, 
+    #                                         epsilon=1e-8, 
+    #                                         center=False, 
+    #                                         scale=False)(xi)                                            
+    # xi = tf.keras.layers.SpatialDropout1D(dropout_rate)(xi)
     
     #Moving average head
     xt = inputs
@@ -77,7 +77,7 @@ def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
                                             scale=False)(xr)
     xr = tf.keras.layers.SpatialDropout1D(dropout_rate)(xr)
 
-    x = tf.keras.layers.Concatenate(axis=2)([xi,xt,xr])
+    x = tf.keras.layers.Concatenate(axis=2)([xt,xr])
 
     return inputs, x
 
@@ -199,26 +199,24 @@ def VGG_11(x, num_filters, n_features, halvings, dropout_rate):
     
     return x
 
-def is_test(x, y):
-    return x % 10 == 0
-
-def is_train(x, y):
-    return not is_test(x, y)
-
-recover = lambda x,y: y
-
 z_normalise = tf.keras.layers.LayerNormalization(axis=0,
                                                  epsilon=1e-8, 
                                                  center=False, 
                                                  scale=False)
 
-def preprocessing(inp, max_length, min_length):
-    inp = inp if max_length is None else inp[-max_length:]
-    inp = z_normalise(inp)
-    pad_size = min_length - tf.shape(inp)[0] if min_length > tf.shape(inp)[0] else 0
-    paddings = [[0, pad_size]]
-    inp = tf.pad(inp, paddings)
-    return inp
+def preprocessing(max_length, min_length, augment=False):
+    def _preprocessing(inp, y):
+        if augment:
+            start = tf.random.uniform(shape=[], minval=0, maxval=tf.shape(inp)[0], dtype=tf.int32)
+            inp = inp if max_length is None else inp[start:start+max_length]
+        else:
+            inp = inp if max_length is None else inp[-max_length:]
+        inp = z_normalise(inp)
+        pad_size = min_length - tf.shape(inp)[0] if min_length > tf.shape(inp)[0] else 0
+        paddings = [[0, pad_size]]
+        inp = tf.pad(inp, paddings)
+        return inp, y
+    return _preprocessing
 
 class DeepFFORMA():
     def __init__(self, mc, n_features, n_models):
@@ -227,8 +225,9 @@ class DeepFFORMA():
 
         self.min_length  = self.mc['model_parameters']['min_length']
         self.batch_size = self.mc['train_parameters']['batch_size']
-        self.max_length  = self.mc['train_parameters']['max_length']
-        
+        self.max_length  = self.mc['train_parameters']['max_length']        
+        self.augment = self.mc['train_parameters']['augment']
+
         seasons  = self.mc['model_parameters']['seasons']
         halvings  = self.mc['model_parameters']['halvings']
         vgg_filters = self.mc['model_parameters']['vgg_filters']
@@ -236,7 +235,6 @@ class DeepFFORMA():
         dropout_rate = self.mc['model_parameters']['dropout_rate']
         lr = self.mc['train_parameters']['learn_rate']
         
-
         inputs_ts = tf.keras.Input((None, 1))  # The input tensor
 
         if vgg_filters is not None:
@@ -267,8 +265,6 @@ class DeepFFORMA():
         # self.model.compile(loss=tf.keras.losses.CategoricalCrossentropy(), 
         #                    optimizer=self.optimizer)
         
-        # self.output_types =(tf.float32, tf.float32)
-        # self.output_shapes=((None,), (self.n_features,))
         self.output_types =tf.float32
         self.output_shapes=(None,) 
 
@@ -278,36 +274,40 @@ class DeepFFORMA():
         train_errors = errors
         ts_pred_data = series
         train_errors_ID = pd.to_numeric(train_errors.index.str[1:], errors='coerce')
-
+        
         # train_errors = pd.get_dummies( np.argmin(train_errors.values, axis=1) )
         # train_errors = (1/(train_errors+1e-9))/(1/(train_errors+1e-9)).sum(axis=1).to_frame().values
         # train_errors = train_errors/train_errors.sum(axis=1).to_frame().values
 
-        gen_series = [(preprocessing(ts, self.max_length, self.min_length), trg)
-                            for ts, trg in
-                                zip(itemgetter(*train_errors_ID)(ts_pred_data),
-                                # train_feats.loc[train_errors.index].values,
-                                train_errors.loc[train_errors.index].values)]
-
-        ds_series_validate = tf.data.Dataset.from_generator(
-                lambda: gen_series,
-                output_types =(self.output_types, tf.float32), 
-                output_shapes=(self.output_shapes, (self.n_models,)))
+        gen_series_train    = [(ts, trg)
+                            for i, (ts, trg) in
+                                enumerate(
+                                    zip(itemgetter(*train_errors_ID)(ts_pred_data),
+                                    train_errors.loc[train_errors.index].values))
+                            if i % 10 != 0]
+        gen_series_validate = [(ts, trg)
+                            for i, (ts, trg) in
+                                enumerate(
+                                    zip(itemgetter(*train_errors_ID)(ts_pred_data),
+                                    train_errors.loc[train_errors.index].values))
+                            if i % 10 == 0]
         
         ds_series_train = tf.data.Dataset.from_generator(
-                lambda: gen_series,
+                lambda: gen_series_train,
                 output_types =(self.output_types, tf.float32),
                 output_shapes=(self.output_shapes, (self.n_models,)))
         
+        ds_series_validate = tf.data.Dataset.from_generator(
+                lambda: gen_series_validate,
+                output_types =(self.output_types, tf.float32), 
+                output_shapes=(self.output_shapes, (self.n_models,)))
 
-        validate_dataset = ds_series_validate.enumerate() \
-                            .filter(is_test) \
-                            .map(recover, num_parallel_calls=tf.data.AUTOTUNE) \
+        preproc = preprocessing(self.max_length, self.min_length, self.augment)
+
+        validate_dataset = ds_series_validate.map(preproc, num_parallel_calls=tf.data.AUTOTUNE) \
                             .padded_batch(self.batch_size)
 
-        train_dataset    = ds_series_train.enumerate() \
-                            .filter(is_train) \
-                            .map(recover, num_parallel_calls=tf.data.AUTOTUNE) \
+        train_dataset    = ds_series_train.map(preproc, num_parallel_calls=tf.data.AUTOTUNE) \
                             .shuffle(self.batch_size*10) \
                             .padded_batch(self.batch_size)
 
@@ -324,7 +324,7 @@ class DeepFFORMA():
                        validation_data=validate_dataset,
                        validation_freq=1,
                        use_multiprocessing=True,
-                       workers=16                       
+                       workers=32                       
                        )
 
         self.fitted = True
@@ -335,15 +335,16 @@ class DeepFFORMA():
         
         uids = y_hat_df.reset_index().unique_id.drop_duplicates()
         test_set_ID = pd.to_numeric(uids.str[1:], errors='coerce')
-        #    test_feats.loc[uids].values)
-        #    )
 
-        gen_series = [(preprocessing(ts, self.max_length, self.min_length),) for ts in itemgetter(*test_set_ID)(ts_pred_data)]
+        preproc = lambda inp: preprocessing(self.max_length, self.min_length, self.augment)(inp, None)[0]
+
+        gen_series = [(ts,) for ts in itemgetter(*test_set_ID)(ts_pred_data)]
         ds_series_test = tf.data.Dataset.from_generator(
                 lambda: gen_series,
                 output_types =(self.output_types,), 
                 output_shapes=(self.output_shapes,))
-        test_dataset = ds_series_test.padded_batch(self.batch_size)
+        test_dataset = ds_series_test.map(preproc, num_parallel_calls=tf.data.AUTOTUNE) \
+                                     .padded_batch(self.batch_size)
         predicted_weights = self.model.predict(test_dataset)
         weights_all = dict((k,v) for k,v in zip(uids, predicted_weights))
         # print(weights_all)

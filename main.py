@@ -337,15 +337,17 @@ def run(df_info, df_pred_data, y_train_df, ts_pred_data,
         else:
             raise NotImplemented()
         df_results.to_pickle(f"results/{combination_type}_{nn}_{seasonality[0]}.pd")
+        with open(f'results/{combination_type}_{nn}_{seasonality[0]}.npy', 'wb') as f:
+            np.save(f, total_combination_owa)
     else:
         df_results.to_pickle(f"results/{combination_type}_{seasonality[0]}.pd")
+        # SAVE combo OWAs to file
+        with open('results/'+combination_type+'_'+seasonality[0]+'.npy', 'wb') as f:
+            np.save(f, total_combination_owa)
 
-    # SAVE combo OWAs to file
-    with open('results/'+combination_type+'_'+seasonality[0]+'.npy', 'wb') as f:
-        np.save(f, total_combination_owa)
 
 if __name__ == '__main__':
-    for seasonality in ['Hourly','Daily','Weekly','Quarterly','Yearly','Monthly'][1:2]:
+    for seasonality in ['Hourly','Daily','Weekly','Quarterly','Yearly','Monthly'][0:1]:
         # seasonality = 'Daily'
         print(f"Loading Data {seasonality}")
 
