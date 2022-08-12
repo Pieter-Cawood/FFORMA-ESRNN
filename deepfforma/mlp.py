@@ -294,14 +294,14 @@ class DeepFFORMA():
                                 if i % 10 == 0]
         
         ds_series_train = tf.data.Dataset.from_generator(
-                lambda: gen_series_train,
-                output_types =(self.output_types, tf.float32),
-                output_shapes=(self.output_shapes, (self.n_models,)))
+                                lambda: gen_series_train,
+                                output_types =(self.output_types, tf.float32),
+                                output_shapes=(self.output_shapes, (self.n_models,)))
         
         ds_series_valid = tf.data.Dataset.from_generator(
-                lambda: gen_series_valid,
-                output_types =(self.output_types, tf.float32), 
-                output_shapes=(self.output_shapes, (self.n_models,)))
+                                lambda: gen_series_valid,
+                                output_types =(self.output_types, tf.float32), 
+                                output_shapes=(self.output_shapes, (self.n_models,)))
 
         preproc_train = preprocessing(self.max_length, self.min_length, self.augment)
         preproc_valid = preprocessing(self.max_length, self.min_length, False)
