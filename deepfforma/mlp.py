@@ -306,10 +306,12 @@ class DeepFFORMA():
 
         train_dataset    = ds_series_train.map(preproc, num_parallel_calls=tf.data.AUTOTUNE) \
                             .shuffle(self.batch_size*10) \
-                            .padded_batch(self.batch_size)
+                            .padded_batch(self.batch_size) \
+                            .prefetch(tf.data.AUTOTUNE)
         
         validate_dataset = ds_series_validate.map(preproc, num_parallel_calls=tf.data.AUTOTUNE) \
-                            .padded_batch(self.batch_size)
+                            .padded_batch(self.batch_size) \
+                            .prefetch(tf.data.AUTOTUNE)
 
         es = tf.keras.callbacks.EarlyStopping(monitor='val_loss',
                                               patience=self.mc['train_parameters']['stop_grow_count'],
@@ -344,7 +346,8 @@ class DeepFFORMA():
                 output_types =(self.output_types,), 
                 output_shapes=(self.output_shapes,))
         test_dataset = ds_series_test.map(preproc, num_parallel_calls=tf.data.AUTOTUNE) \
-                                     .padded_batch(self.batch_size)
+                                     .padded_batch(self.batch_size) \
+                                     .prefetch(tf.data.AUTOTUNE)
         predicted_weights = self.model.predict(test_dataset)
         weights_all = dict((k,v) for k,v in zip(uids, predicted_weights))
         # print(weights_all)
