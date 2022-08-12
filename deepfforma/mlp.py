@@ -39,7 +39,7 @@ class SoftMax(tf.keras.constraints.Constraint):
 def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
     inputs = tf.keras.layers.ZeroPadding1D(padding=(0,seasons))(inputs)
 
-    xi = inputs            
+    # xi = inputs            
     # xi = tf.keras.layers.Conv1D(num_filters, (seasons+1),
     #                             padding='valid',
     #                             kernel_initializer=SumOne.init,
@@ -77,7 +77,7 @@ def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
                                             scale=False)(xr)
     xr = tf.keras.layers.SpatialDropout1D(dropout_rate)(xr)
 
-    x = tf.keras.layers.Concatenate(axis=2)([xi,xt,xr])
+    x = tf.keras.layers.Concatenate(axis=2)([xt,xr])
 
     return inputs, x
 
