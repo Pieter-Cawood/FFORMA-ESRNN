@@ -39,16 +39,16 @@ class SoftMax(tf.keras.constraints.Constraint):
 def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
     inputs = tf.keras.layers.ZeroPadding1D(padding=(0,seasons))(inputs)
 
-    # xi = inputs            
+    xi = inputs            
     # xi = tf.keras.layers.Conv1D(num_filters, (seasons+1),
     #                             padding='valid',
     #                             kernel_initializer=SumOne.init,
     #                             kernel_constraint=SumOne(),
-    #                             use_bias=False)(xi)                                
+    #                             use_bias=False)(xi)
     # xi = tf.keras.layers.LayerNormalization(axis=1, 
     #                                         epsilon=1e-8, 
     #                                         center=False, 
-    #                                         scale=False)(xi)                                            
+    #                                         scale=False)(xi)
     # xi = tf.keras.layers.SpatialDropout1D(dropout_rate)(xi)
     
     #Moving average head
@@ -77,7 +77,7 @@ def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
                                             scale=False)(xr)
     xr = tf.keras.layers.SpatialDropout1D(dropout_rate)(xr)
 
-    x = tf.keras.layers.Concatenate(axis=2)([xt,xr])
+    x = tf.keras.layers.Concatenate(axis=2)([xi,xt,xr])
 
     return inputs, x
 
@@ -205,12 +205,12 @@ z_normalise = tf.keras.layers.LayerNormalization(axis=0,
                                                  scale=False)
 
 def preprocessing(max_length, min_length, augment=False):
-    def _preprocessing(inp, y):
+    def _preprocessing(inp, y):        
         if augment:
             start = tf.random.uniform(shape=[], minval=0, maxval=tf.shape(inp)[0], dtype=tf.int32)
             inp = inp if max_length is None else inp[start:start+max_length+1]
         else:
-            inp = inp if max_length is None else inp[-max_length:]
+            inp = inp if max_length is None else inp[-max_length:]        
         inp = z_normalise(inp)
         pad_size = min_length - tf.shape(inp)[0] if min_length > tf.shape(inp)[0] else 0
         if pad_size > 0:
@@ -280,13 +280,13 @@ class DeepFFORMA():
         # train_errors = (1/(train_errors+1e-9))/(1/(train_errors+1e-9)).sum(axis=1).to_frame().values
         # train_errors = train_errors/train_errors.sum(axis=1).to_frame().values
 
-        gen_series_train    = [(ts, trg)
+        gen_series_train = [(ts, trg)
                                 for i, (ts, trg) in
                                     enumerate(
                                         zip(itemgetter(*train_errors_ID)(ts_pred_data),
                                         train_errors.loc[train_errors.index].values))
                                 if i % 10 != 0]
-        gen_series_validate = [(ts, trg)
+        gen_series_valid = [(ts, trg)
                                 for i, (ts, trg) in
                                     enumerate(
                                         zip(itemgetter(*train_errors_ID)(ts_pred_data),
@@ -298,19 +298,20 @@ class DeepFFORMA():
                 output_types =(self.output_types, tf.float32),
                 output_shapes=(self.output_shapes, (self.n_models,)))
         
-        ds_series_validate = tf.data.Dataset.from_generator(
-                lambda: gen_series_validate,
+        ds_series_valid = tf.data.Dataset.from_generator(
+                lambda: gen_series_valid,
                 output_types =(self.output_types, tf.float32), 
                 output_shapes=(self.output_shapes, (self.n_models,)))
 
-        preproc = preprocessing(self.max_length, self.min_length, self.augment)
+        preproc_train = preprocessing(self.max_length, self.min_length, self.augment)
+        preproc_valid = preprocessing(self.max_length, self.min_length, False)
 
-        train_dataset    = ds_series_train.map(preproc, num_parallel_calls=tf.data.AUTOTUNE) \
+        train_dataset = ds_series_train.map(preproc_train, num_parallel_calls=tf.data.AUTOTUNE) \
                             .shuffle(self.batch_size*10) \
                             .padded_batch(self.batch_size) \
                             .prefetch(tf.data.AUTOTUNE)
         
-        validate_dataset = ds_series_validate.map(preproc, num_parallel_calls=tf.data.AUTOTUNE) \
+        valid_dataset = ds_series_valid.map(preproc_valid, num_parallel_calls=tf.data.AUTOTUNE) \
                             .padded_batch(self.batch_size) \
                             .prefetch(tf.data.AUTOTUNE)
 
@@ -324,7 +325,7 @@ class DeepFFORMA():
                        epochs=epochs,
                        verbose=1,
                        callbacks=[es],
-                       validation_data=validate_dataset,
+                       validation_data=valid_dataset,
                        validation_freq=1,
                        use_multiprocessing=True,
                        workers=32                       
@@ -339,7 +340,7 @@ class DeepFFORMA():
         uids = y_hat_df.reset_index().unique_id.drop_duplicates()
         test_set_ID = pd.to_numeric(uids.str[1:], errors='coerce')
 
-        preproc = lambda inp: preprocessing(self.max_length, self.min_length, self.augment)(inp, None)[0]
+        preproc = lambda inp: preprocessing(self.max_length, self.min_length, False)(inp, None)[0]
 
         gen_series = [(ts,) for ts in itemgetter(*test_set_ID)(ts_pred_data)]
         ds_series_test = tf.data.Dataset.from_generator(
