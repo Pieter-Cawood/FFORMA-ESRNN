@@ -39,7 +39,7 @@ DEEPFFORMA_CONFIGS = {
     'Daily': dict(
         model_parameters=dict(
             min_length=16, #1%-111, 5%-177
-            halvings=4,
+            halvings=3,
             vgg_filters=None,
             res_filters=16,
             dropout_rate=0.1,
@@ -51,7 +51,7 @@ DEEPFFORMA_CONFIGS = {
             epochs=250,
             max_length=4315, #99-4315
             stop_grow_count=40,
-            augment=False
+            augment=True
         )),
 
     'Weekly': dict(
