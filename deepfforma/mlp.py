@@ -187,16 +187,12 @@ def VGG_11(x, num_filters, n_features, halvings, dropout_rate):
         x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
     
     x = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
+    x = tf.keras.layers.Dense((num_filters * (2 ** 3))*4, activation='relu')(x)
+    x = tf.keras.layers.Dropout(dropout_rate)(x)
+    x = tf.keras.layers.Dense((num_filters * (2 ** 3))*4, activation='relu')(x)
+    x = tf.keras.layers.Dropout(dropout_rate)(x)
+    x = tf.keras.layers.Dense(n_features, activation='linear')(x)
 
-    # Create model.    
-    layer_units = [(num_filters * (2 ** 3))*4, (num_filters * (2 ** 3))*4]
-    for _i in range(len(layer_units)):
-        x = tf.keras.layers.Dense(layer_units[_i],activation='relu')(x)
-        if dropout_rate:
-            x = tf.keras.layers.Dropout(dropout_rate)(x)
-    
-    x = tf.keras.layers.Dense(n_features,activation='linear')(x)
-    
     return x
 
 z_normalise = tf.keras.layers.LayerNormalization(axis=0,
@@ -205,15 +201,16 @@ z_normalise = tf.keras.layers.LayerNormalization(axis=0,
                                                  scale=False)
 
 def preprocessing(max_length, min_length, augment=False):
-    def _preprocessing(inp, y):        
+    def _preprocessing(inp, y):
         if augment:
-            start = tf.random.uniform(shape=[], minval=0, maxval=tf.shape(inp)[0], dtype=tf.int32)
-            inp = inp if max_length is None else inp[start:start+max_length+1]
-        else:
-            inp = inp if max_length is None else inp[-max_length:]        
+            aug = tf.random.uniform(shape=[], minval=0, maxval=augment, dtype=tf.int32)
+            if aug > 0:
+                inp = inp[:-aug]
+        if max_length is not None:
+            inp = inp[-max_length:]
         inp = z_normalise(inp)
-        pad_size = min_length - tf.shape(inp)[0] if min_length > tf.shape(inp)[0] else 0
-        if pad_size > 0:
+        if min_length > tf.shape(inp)[0]:
+            pad_size = min_length - tf.shape(inp)[0]
             paddings = [[0, pad_size]]
             inp = tf.pad(inp, paddings)
         return inp, y
@@ -228,8 +225,8 @@ class DeepFFORMA():
         self.batch_size = self.mc['train_parameters']['batch_size']
         self.max_length  = self.mc['train_parameters']['max_length']        
         self.augment = self.mc['train_parameters']['augment']
+        self.seasons  = self.mc['model_parameters']['seasons']
 
-        seasons  = self.mc['model_parameters']['seasons']
         halvings  = self.mc['model_parameters']['halvings']
         vgg_filters = self.mc['model_parameters']['vgg_filters']
         res_filters = self.mc['model_parameters']['res_filters']
@@ -239,16 +236,16 @@ class DeepFFORMA():
         inputs_ts = tf.keras.Input((None, 1))  # The input tensor
 
         if vgg_filters is not None:
-            if seasons == 0:
+            if self.seasons == 0:
                 outputs_ts = inputs_ts
             else:
-                inputs_ts, outputs_ts = TemporalHeads(inputs_ts, vgg_filters, dropout_rate, seasons)
+                inputs_ts, outputs_ts = TemporalHeads(inputs_ts, vgg_filters, dropout_rate, self.seasons)
             outputs_ts = VGG_11(outputs_ts, n_features, vgg_filters, halvings, dropout_rate)            
         elif res_filters is not None:
-            if seasons == 0:
+            if self.seasons == 0:
                 outputs_ts = inputs_ts
             else:
-                inputs_ts, outputs_ts = TemporalHeads(inputs_ts, res_filters, dropout_rate, seasons)
+                inputs_ts, outputs_ts = TemporalHeads(inputs_ts, res_filters, dropout_rate, self.seasons)
             outputs_ts = resnet10(outputs_ts, n_features, res_filters, halvings)
         else:
             raise NotImplemented()
@@ -285,13 +282,13 @@ class DeepFFORMA():
                                     enumerate(
                                         zip(itemgetter(*train_errors_ID)(ts_pred_data),
                                         train_errors.loc[train_errors.index].values))
-                                if i % 10 != 0]
+                                if i % 10 != 0] #10-90 split test-valid
         gen_series_valid = [(ts, trg)
                                 for i, (ts, trg) in
                                     enumerate(
                                         zip(itemgetter(*train_errors_ID)(ts_pred_data),
                                         train_errors.loc[train_errors.index].values))
-                                if i % 10 == 0]
+                                if i % 10 == 0] #10-90 split test-valid
         
         ds_series_train = tf.data.Dataset.from_generator(
                                 lambda: gen_series_train,
@@ -303,7 +300,7 @@ class DeepFFORMA():
                                 output_types =(self.output_types, tf.float32), 
                                 output_shapes=(self.output_shapes, (self.n_models,)))
 
-        preproc_train = preprocessing(self.max_length, self.min_length, self.augment)
+        preproc_train = preprocessing(self.max_length, self.min_length, self.seasons if self.augment else False)
         preproc_valid = preprocessing(self.max_length, self.min_length, False)
 
         train_dataset = ds_series_train.map(preproc_train, num_parallel_calls=tf.data.AUTOTUNE) \
@@ -360,5 +357,6 @@ class DeepFFORMA():
         fforma_preds.name = 'navg_prediction'
         preds = pd.concat([y_hat_df, fforma_preds], axis=1)
         return preds
+
 
 
