@@ -105,7 +105,7 @@ DEEPFFORMA_CONFIGS = {
             epochs=150,
             max_length=267, #99-267
             stop_grow_count=20,
-            augment=False
+            augment=True
         )),
 
     'Yearly': dict(
