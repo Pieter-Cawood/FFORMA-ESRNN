@@ -207,13 +207,14 @@ z_normalise = tf.keras.layers.LayerNormalization(axis=0,
 def preprocessing(max_length, min_length, augment=False):
     def _preprocessing(inp, y):        
         if augment:
-            start = tf.random.uniform(shape=[], minval=0, maxval=tf.shape(inp)[0], dtype=tf.int32)
-            inp = inp if max_length is None else inp[start:start+max_length+1]
-        else:
-            inp = inp if max_length is None else inp[-max_length:]        
+            aug = tf.random.uniform(shape=[], minval=0, maxval=augment, dtype=tf.int32)
+            if aug > 0:
+                inp = inp[:-aug]
+        if max_length is not None:
+            inp = inp[-max_length:]        
         inp = z_normalise(inp)
-        pad_size = min_length - tf.shape(inp)[0] if min_length > tf.shape(inp)[0] else 0
-        if pad_size > 0:
+        if min_length > tf.shape(inp)[0]:
+            pad_size = min_length - tf.shape(inp)[0]        
             paddings = [[0, pad_size]]
             inp = tf.pad(inp, paddings)
         return inp, y
