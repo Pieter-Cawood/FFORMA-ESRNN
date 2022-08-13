@@ -51,7 +51,7 @@ DEEPFFORMA_CONFIGS = {
             epochs=250,
             max_length=2940, #99-4315, 50-2940
             stop_grow_count=40,
-            augment=True
+            augment=False
         )),
 
     'Weekly': dict(
@@ -69,7 +69,7 @@ DEEPFFORMA_CONFIGS = {
             epochs=1000,
             max_length=2283, #99-2283
             stop_grow_count=100,
-            augment=True
+            augment=False
         )),
     
     'Monthly': dict(
