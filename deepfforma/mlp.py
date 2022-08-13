@@ -204,14 +204,14 @@ z_normalise = tf.keras.layers.LayerNormalization(axis=0,
                                                  center=False, 
                                                  scale=False)
 
-def preprocessing(max_length, min_length, augment=False):
+def preprocessing(max_length, min_length, augment):
     def _preprocessing(inp, y):        
         if augment:
             aug = tf.random.uniform(shape=[], minval=0, maxval=augment, dtype=tf.int32)
             if aug > 0:
                 inp = inp[:-aug]
         if max_length is not None:
-            inp = inp[-max_length:]        
+            inp = inp[-max_length:]
         inp = z_normalise(inp)
         if min_length > tf.shape(inp)[0]:
             pad_size = min_length - tf.shape(inp)[0]        
@@ -229,8 +229,8 @@ class DeepFFORMA():
         self.batch_size = self.mc['train_parameters']['batch_size']
         self.max_length  = self.mc['train_parameters']['max_length']        
         self.augment = self.mc['train_parameters']['augment']
+        self.seasons  = self.mc['model_parameters']['seasons']
 
-        seasons  = self.mc['model_parameters']['seasons']
         halvings  = self.mc['model_parameters']['halvings']
         vgg_filters = self.mc['model_parameters']['vgg_filters']
         res_filters = self.mc['model_parameters']['res_filters']
@@ -240,16 +240,16 @@ class DeepFFORMA():
         inputs_ts = tf.keras.Input((None, 1))  # The input tensor
 
         if vgg_filters is not None:
-            if seasons == 0:
+            if self.seasons == 0:
                 outputs_ts = inputs_ts
             else:
-                inputs_ts, outputs_ts = TemporalHeads(inputs_ts, vgg_filters, dropout_rate, seasons)
+                inputs_ts, outputs_ts = TemporalHeads(inputs_ts, vgg_filters, dropout_rate, self.seasons)
             outputs_ts = VGG_11(outputs_ts, n_features, vgg_filters, halvings, dropout_rate)            
         elif res_filters is not None:
-            if seasons == 0:
+            if self.seasons == 0:
                 outputs_ts = inputs_ts
             else:
-                inputs_ts, outputs_ts = TemporalHeads(inputs_ts, res_filters, dropout_rate, seasons)
+                inputs_ts, outputs_ts = TemporalHeads(inputs_ts, res_filters, dropout_rate, self.seasons)
             outputs_ts = resnet10(outputs_ts, n_features, res_filters, halvings)
         else:
             raise NotImplemented()
@@ -304,8 +304,11 @@ class DeepFFORMA():
                                 output_types =(self.output_types, tf.float32), 
                                 output_shapes=(self.output_shapes, (self.n_models,)))
 
-        preproc_train = preprocessing(self.max_length, self.min_length, self.augment)
-        preproc_valid = preprocessing(self.max_length, self.min_length, False)
+        if self.augment:
+            preproc_train = preprocessing(self.max_length, self.min_length, self.seasons)
+        else:
+            preproc_train = preprocessing(self.max_length, self.min_length, 0)
+        preproc_valid = preprocessing(self.max_length, self.min_length, 0)
 
         train_dataset = ds_series_train.map(preproc_train, num_parallel_calls=tf.data.AUTOTUNE) \
                             .shuffle(self.batch_size*10) \
@@ -341,16 +344,19 @@ class DeepFFORMA():
         uids = y_hat_df.reset_index().unique_id.drop_duplicates()
         test_set_ID = pd.to_numeric(uids.str[1:], errors='coerce')
 
-        preproc = lambda inp: preprocessing(self.max_length, self.min_length, False)(inp, None)[0]
+        preproc = lambda inp: preprocessing(self.max_length, self.min_length, 0)(inp, None)[0]
 
         gen_series = [(ts,) for ts in itemgetter(*test_set_ID)(ts_pred_data)]
+
         ds_series_test = tf.data.Dataset.from_generator(
                 lambda: gen_series,
                 output_types =(self.output_types,), 
                 output_shapes=(self.output_shapes,))
+
         test_dataset = ds_series_test.map(preproc, num_parallel_calls=tf.data.AUTOTUNE) \
                                      .padded_batch(self.batch_size) \
                                      .prefetch(tf.data.AUTOTUNE)
+        
         predicted_weights = self.model.predict(test_dataset)
         weights_all = dict((k,v) for k,v in zip(uids, predicted_weights))
         # print(weights_all)
