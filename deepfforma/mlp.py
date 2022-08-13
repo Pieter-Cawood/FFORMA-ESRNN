@@ -257,8 +257,8 @@ class DeepFFORMA():
 
         outputs_ts = tf.keras.layers.BatchNormalization()(outputs_ts)
         outputs_ts = tf.keras.layers.Dense(n_models, 
-                                        use_bias=False,
-                                        activation='softmax')(outputs_ts)
+                                            use_bias=False,
+                                            activation='softmax')(outputs_ts)
 
         self.optimizer = Adam(lr=lr)
         self.model = tf.keras.Model(inputs=inputs_ts, outputs=outputs_ts)
