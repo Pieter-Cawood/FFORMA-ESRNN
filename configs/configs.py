@@ -76,8 +76,8 @@ DEEPFFORMA_CONFIGS = {
         model_parameters=dict(
             min_length=16, #1%-66, 5%-68, 15%-69, 20%-70
             halvings=4,
-            vgg_filters=16,
-            res_filters=None,
+            vgg_filters=None,
+            res_filters=16,
             dropout_rate=0.1,
             seasons=12
         ),
@@ -112,8 +112,8 @@ DEEPFFORMA_CONFIGS = {
         model_parameters=dict(
             min_length=4, #1-13
             halvings=0,
-            vgg_filters=16,
-            res_filters=None,
+            vgg_filters=None,
+            res_filters=16,
             dropout_rate=0.1,
             seasons=1
         ),
