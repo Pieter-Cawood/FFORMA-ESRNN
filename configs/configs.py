@@ -33,7 +33,7 @@ DEEPFFORMA_CONFIGS = {
             epochs=1000,
             max_length=960,
             stop_grow_count=100,
-            augment=True
+            augment=False
         )),
 
     'Daily': dict(
@@ -51,7 +51,7 @@ DEEPFFORMA_CONFIGS = {
             epochs=250,
             max_length=2940, #99-4315, 50-2940
             stop_grow_count=40,
-            augment=True
+            augment=False
         )),
 
     'Weekly': dict(
@@ -87,7 +87,7 @@ DEEPFFORMA_CONFIGS = {
             epochs=150,
             max_length=664, #99-664
             stop_grow_count=20,
-            augment=True
+            augment=False
         )),
     
     'Quarterly': dict(
@@ -105,7 +105,7 @@ DEEPFFORMA_CONFIGS = {
             epochs=150,
             max_length=267, #99-267
             stop_grow_count=20,
-            augment=True
+            augment=False
         )),
 
     'Yearly': dict(
@@ -123,7 +123,7 @@ DEEPFFORMA_CONFIGS = {
             epochs=150,
             max_length=81, #99-81
             stop_grow_count=20,
-            augment=True
+            augment=False
         ))
 }
 
