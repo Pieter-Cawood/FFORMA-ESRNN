@@ -40,9 +40,13 @@ def forecast_error_reduction_mechanism(y_hat, y_hat_base_models, threshold=0.4):
 def run(df_info, df_train_data, df_pred_data,
         seasonality,
         k_folds=10, n_runs=5, optimizing_runs=0, combination_type='FFORMA', hyper_search_run=False):
-
-    df_results = pd.read_pickle(f"results/{combination_type}_{seasonality[0]}.pd")
-    print(df_results)
+    print(f"results/{combination_type}_{seasonality[0]}.pd")
+    try:
+        df_results = pd.read_pickle(f"results/{combination_type}_{seasonality[0]}.pd")        
+        print(df_results)
+    except:
+        print(f"No results")
+    print(45*"-")
 
 if __name__ == '__main__':
     for seasonality in ['Hourly','Daily','Weekly','Quarterly','Yearly','Monthly']:
@@ -58,7 +62,7 @@ if __name__ == '__main__':
                                  'Neural Averaging 2',
                                  'Neural Stacking',
                                  'Deep FFORMA_VGG',
-                                 'Deep FFORMA_RESNET'][-1:]:
+                                 'Deep FFORMA_RESNET'][-2:]:            
             run(df_info=X_test_df,
                 df_train_data=y_train_df,
                 df_pred_data=y_test_df,
