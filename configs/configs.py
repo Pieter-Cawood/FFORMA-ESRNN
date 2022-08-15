@@ -113,7 +113,7 @@ DEEPFFORMA_CONFIGS = {
             min_length=4, #1-13
             halvings=0,
             vgg_filters=None,
-            res_filters=16,
+            res_filters=24,
             dropout_rate=0.1,
             seasons=1
         ),
