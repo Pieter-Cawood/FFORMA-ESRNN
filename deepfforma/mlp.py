@@ -211,6 +211,8 @@ def preprocessing(max_length, min_length, augment):
             aug = tf.random.uniform(shape=[], minval=0, maxval=augment, dtype=tf.int32)            
         if max_length is not None:
             inp = inp[aug:aug+max_length]
+        else:
+            inp = inp[aug:]
         inp = z_normalise(inp)
         if min_length > tf.shape(inp)[0]:
             pad_size = min_length - tf.shape(inp)[0]        
