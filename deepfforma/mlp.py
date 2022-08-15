@@ -204,7 +204,7 @@ z_normalise = tf.keras.layers.LayerNormalization(axis=0,
                                                  center=False, 
                                                  scale=False)
 
-def preprocessing(max_length, min_length, augment):
+def preprocessing(max_length, min_length, augment):    
     def _preprocessing(inp, y):        
         if augment:
             aug = tf.random.uniform(shape=[], minval=0, maxval=augment, dtype=tf.int32)
@@ -281,13 +281,13 @@ class DeepFFORMA():
         # train_errors = (1/(train_errors+1e-9))/(1/(train_errors+1e-9)).sum(axis=1).to_frame().values
         # train_errors = train_errors/train_errors.sum(axis=1).to_frame().values
 
-        gen_series_train = [(ts, trg)
+        gen_series_train = [(tf.keras.backend.reverse(ts), trg)
                                 for i, (ts, trg) in
                                     enumerate(
                                         zip(itemgetter(*train_errors_ID)(ts_pred_data),
                                         train_errors.loc[train_errors.index].values))
                                 if i % 10 != 0]
-        gen_series_valid = [(ts, trg)
+        gen_series_valid = [(tf.keras.backend.reverse(ts), trg)
                                 for i, (ts, trg) in
                                     enumerate(
                                         zip(itemgetter(*train_errors_ID)(ts_pred_data),
@@ -346,7 +346,7 @@ class DeepFFORMA():
 
         preproc = lambda inp: preprocessing(self.max_length, self.min_length, 0)(inp, None)[0]
 
-        gen_series = [(ts,) for ts in itemgetter(*test_set_ID)(ts_pred_data)]
+        gen_series = [(tf.keras.backend.reverse(ts),) for ts in itemgetter(*test_set_ID)(ts_pred_data)]
 
         ds_series_test = tf.data.Dataset.from_generator(
                 lambda: gen_series,

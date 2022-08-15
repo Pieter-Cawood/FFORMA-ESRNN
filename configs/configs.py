@@ -38,10 +38,10 @@ DEEPFFORMA_CONFIGS = {
 
     'Daily': dict(
         model_parameters=dict(
-            min_length=16, #1%-111, 5%-177
+            min_length=24, #1%-111, 5%-177
             halvings=3,
             vgg_filters=None,
-            res_filters=16,
+            res_filters=24,
             dropout_rate=0.1,
             seasons=7
         ),
@@ -77,7 +77,7 @@ DEEPFFORMA_CONFIGS = {
             min_length=16, #1%-66, 5%-68, 15%-69, 20%-70
             halvings=4,
             vgg_filters=None,
-            res_filters=16,
+            res_filters=24,
             dropout_rate=0.1,
             seasons=12
         ),
@@ -95,7 +95,7 @@ DEEPFFORMA_CONFIGS = {
             min_length=8, #1%-24, 5%-35, 15%-46, 20%-55
             halvings=2,
             vgg_filters=None,
-            res_filters=16,
+            res_filters=24,
             dropout_rate=0.1,
             seasons=4
         ),
