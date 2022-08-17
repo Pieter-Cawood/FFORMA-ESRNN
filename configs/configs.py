@@ -4,7 +4,9 @@ DEEPFFORMA_CONFIGS = {
     #how many halvings are needed to get the season down to 1 point
     #season-halvings: (17,34)-5, (9,16)-4, (5,8)-3, (3,4)-2, (1,2)-1 
     #
+    #11-352, 12-384, 13-416, 14-448, 15-480, 16-512
     #minimum points you want available at the end from the shortest ts    
+    #length-halvings-points: 320-5-0, 160-4-0, 80-3-0, 40-2-0, 20-1-0
     #length-halvings-points: 288-5-9, 144-4-9, 72-3-9, 36-2-9, 18-1-9
     #length-halvings-points: 256-5-8, 128-4-8, 64-3-8, 32-2-8, 16-1-8
     #length-halvings-points: 224-5-7  112-4-7, 56-3-7, 28-2-7, 14-1-7
@@ -20,82 +22,77 @@ DEEPFFORMA_CONFIGS = {
     #32/(2**5)=1, 16/(2**4)=1, 8/(2**3)=1, 4/(2**2)=1
     'Hourly': dict(
         model_parameters=dict(
-            min_length=32, # 1 700
             halvings=5,
             vgg_filters=None,
-            res_filters=16,
+            res_filters=64,
             dropout_rate=0.1,
-            seasons=24
+            seasons=[24,168]
         ),
         train_parameters=dict(
             learn_rate=1e-4,
             batch_size=92,
             epochs=1000,
-            max_length=960,
+            max_length=960, #960,
             stop_grow_count=100,
             augment=False
         )),
 
     'Daily': dict(
         model_parameters=dict(
-            min_length=24, #1%-111, 5%-177
-            halvings=3,
+            halvings=5,
             vgg_filters=None,
-            res_filters=24,
+            res_filters=64,
             dropout_rate=0.1,
-            seasons=7
+            seasons=[7,365]
         ),
         train_parameters=dict(
             learn_rate=1e-4,
             batch_size=92,
             epochs=250,
-            max_length=2940, #99-4315, 50-2940
+            max_length=224, #2940, #99-4315, 50-2940
             stop_grow_count=40,
             augment=False
         )),
 
     'Weekly': dict(
         model_parameters=dict(
-            min_length=32, #0..15%-80, 20%-275
             halvings=5,
             vgg_filters=None,
-            res_filters=16,
+            res_filters=64,
             dropout_rate=0.1,
-            seasons=52 #52
+            seasons=52
         ),
         train_parameters=dict(
             learn_rate=1e-4,
             batch_size=92,
             epochs=1000,
-            max_length=2283, #99-2283
+            max_length=320, #99-2283
             stop_grow_count=100,
             augment=False
         )),
     
     'Monthly': dict(
         model_parameters=dict(
-            min_length=16, #1%-66, 5%-68, 15%-69, 20%-70
             halvings=4,
             vgg_filters=None,
-            res_filters=24,
+            res_filters=64,
             dropout_rate=0.1,
-            seasons=12
+            seasons=[3,12]
         ),
         train_parameters=dict(
             learn_rate=1e-4,
             batch_size=92,
             epochs=150,
-            max_length=664, #99-664
+            max_length=128, #99-664
             stop_grow_count=20,
             augment=False
         )),
     
     'Quarterly': dict(
         model_parameters=dict(
-            min_length=8, #1%-24, 5%-35, 15%-46, 20%-55
-            halvings=2,
+            halvings=4,
             vgg_filters=None,
-            res_filters=24,
+            res_filters=64,
             dropout_rate=0.1,
             seasons=4
         ),
@@ -103,17 +100,16 @@ DEEPFFORMA_CONFIGS = {
             learn_rate=1e-4,
             batch_size=92,
             epochs=150,
-            max_length=267, #99-267
+            max_length=64, #99-267
             stop_grow_count=20,
             augment=False
         )),
 
     'Yearly': dict(
         model_parameters=dict(
-            min_length=4, #1-13
-            halvings=0,
+            halvings=3,
             vgg_filters=None,
-            res_filters=24,
+            res_filters=64,
             dropout_rate=0.1,
             seasons=1
         ),
@@ -121,7 +117,7 @@ DEEPFFORMA_CONFIGS = {
             learn_rate=1e-4,
             batch_size=92,
             epochs=150,
-            max_length=81, #99-81
+            max_length=32, #99-81
             stop_grow_count=20,
             augment=False
         ))
