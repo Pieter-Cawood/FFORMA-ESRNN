@@ -3,8 +3,10 @@ DEEPFFORMA_CONFIGS = {
     #
     #how many halvings are needed to get the season down to 1 point
     #season-halvings: (17,34)-5, (9,16)-4, (5,8)-3, (3,4)-2, (1,2)-1 
+    #    
+    #can convolution drift carry you the rest of the way
+    #resnet10: 11-22, vgg11: 8-16
     #
-    #11-352, 12-384, 13-416, 14-448, 15-480, 16-512
     #minimum points you want available at the end from the shortest ts    
     #length-halvings-points: 320-5-0, 160-4-0, 80-3-0, 40-2-0, 20-1-0
     #length-halvings-points: 288-5-9, 144-4-9, 72-3-9, 36-2-9, 18-1-9
@@ -15,11 +17,9 @@ DEEPFFORMA_CONFIGS = {
     #length-halvings-points: 128-5-4   64-4-4, 32-3-4, 16-2-4,  8-1-4
     #length-halvings-points:  96-5-3   48-4-3, 24-3-3, 12-2-3,  6-1-3
     #length-halvings-points:  64-5-2   32-4-2, 16-3-2,  8-2-2,  4-1-2
-    #
-    #can convolution drift carry you the rest of the way
-    #resnet10: 11-22, vgg11: 8-16
-    #
-    #32/(2**5)=1, 16/(2**4)=1, 8/(2**3)=1, 4/(2**2)=1
+    #11-352, 12-384, 13-416, 14-448, 15-480, 16-512, 17-544, 18-576, 
+    #19-608, 20-640, 21-672, 22-704, 23-736, 
+    #35-1112
     'Hourly': dict(
         model_parameters=dict(
             halvings=5,
@@ -32,7 +32,7 @@ DEEPFFORMA_CONFIGS = {
             learn_rate=1e-4,
             batch_size=92,
             epochs=1000,
-            max_length=960, #960,
+            max_length=700, #960,
             stop_grow_count=100,
             augment=False
         )),
@@ -49,7 +49,7 @@ DEEPFFORMA_CONFIGS = {
             learn_rate=1e-4,
             batch_size=92,
             epochs=250,
-            max_length=224, #2940, #99-4315, 50-2940
+            max_length=1112, #2940, #99-4315, 50-2940
             stop_grow_count=40,
             augment=False
         )),
@@ -59,14 +59,14 @@ DEEPFFORMA_CONFIGS = {
             halvings=5,
             vgg_filters=None,
             res_filters=64,
-            dropout_rate=0.1,
+            dropout_rate=0.2,
             seasons=52
         ),
         train_parameters=dict(
             learn_rate=1e-4,
             batch_size=92,
             epochs=1000,
-            max_length=320, #99-2283
+            max_length=416, #99-2283
             stop_grow_count=100,
             augment=False
         )),
@@ -77,13 +77,13 @@ DEEPFFORMA_CONFIGS = {
             vgg_filters=None,
             res_filters=64,
             dropout_rate=0.1,
-            seasons=[3,12]
+            seasons=12
         ),
         train_parameters=dict(
             learn_rate=1e-4,
             batch_size=92,
             epochs=150,
-            max_length=128, #99-664
+            max_length=96, #99-664
             stop_grow_count=20,
             augment=False
         )),
