@@ -37,47 +37,60 @@ class SoftMax(tf.keras.constraints.Constraint):
         return exp / tf.reduce_sum(exp)
 
 def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
-    # inputs = tf.keras.layers.ZeroPadding1D(padding=(0,seasons))(inputs)
-
-    # xi = inputs            
-    # xi = tf.keras.layers.Conv1D(num_filters, (seasons+1),
-    #                             padding='valid',
-    #                             kernel_initializer=SumOne.init,
-    #                             kernel_constraint=SumOne(),
-    #                             use_bias=False)(xi)
-    # xi = tf.keras.layers.LayerNormalization(axis=1, 
-    #                                         epsilon=1e-8, 
-    #                                         center=False, 
-    #                                         scale=False)(xi)
-    # xi = tf.keras.layers.SpatialDropout1D(dropout_rate)(xi)
+    if not isinstance(seasons,list):
+        seasons_list = [seasons]
+    else:
+        seasons_list = seasons
     
+    # xi_nife = []
+    # xi_fork = inputs
+    # for seasons in seasons_list:
+    #     xi = tf.keras.layers.ZeroPadding1D(padding=(0,seasons))(xi_fork)
+    #     xi = tf.keras.layers.Cropping1D(cropping=(0,seasons))(xi)
+    #     xi_nife.append(xi)
+    # if len(seasons_list) > 1:
+    #     xi = tf.keras.layers.Concatenate(axis=2)(xi_nife)
+    xi = inputs
+
     #Moving average head
-    xt = inputs
-    xt = tf.keras.layers.Conv1D(num_filters, (seasons+1),
-                                padding='valid',
-                                kernel_initializer=SoftMax.init,
-                                kernel_constraint=SoftMax(),
-                                use_bias=False)(xt)
-    xt = tf.keras.layers.LayerNormalization(axis=1, 
-                                            epsilon=1e-8, 
-                                            center=False, 
-                                            scale=False)(xt)
-    xt = tf.keras.layers.SpatialDropout1D(dropout_rate)(xt)
+    xt_nife = []
+    xt_fork = inputs    
+    for seasons in seasons_list:
+        xt = tf.keras.layers.ZeroPadding1D(padding=(0,seasons))(xt_fork)
+        xt = tf.keras.layers.Conv1D(num_filters, (seasons+1),
+                                    padding='valid',
+                                    kernel_initializer=SoftMax.init,
+                                    kernel_constraint=SoftMax(),
+                                    use_bias=False)(xt)
+        xt = tf.keras.layers.LayerNormalization(axis=1, 
+                                                epsilon=1e-8, 
+                                                center=False, 
+                                                scale=False)(xt)
+        xt = tf.keras.layers.SpatialDropout1D(dropout_rate)(xt)
+        xt_nife.append(xt)
+    if len(seasons_list) > 1:
+        xt = tf.keras.layers.Concatenate(axis=2)(xt_nife)
 
-    #Differencing head
-    xr = inputs    
-    xr = tf.keras.layers.Conv1D(num_filters, (seasons+1),
-                                padding='valid',
-                                kernel_initializer=SumZero.init,
-                                kernel_constraint=SumZero(),
-                                use_bias=False)(xr)
-    xr = tf.keras.layers.LayerNormalization(axis=1,
-                                            epsilon=1e-8, 
-                                            center=False, 
-                                            scale=False)(xr)
-    xr = tf.keras.layers.SpatialDropout1D(dropout_rate)(xr)
+    #Differencing head    
+    xr_nife = []
+    xr_fork = inputs
+    for seasons in seasons_list:
+        xr = tf.keras.layers.ZeroPadding1D(padding=(0,seasons))(xr_fork)
+        xr = tf.keras.layers.Conv1D(num_filters, (seasons+1),
+                                    padding='valid',
+                                    kernel_initializer=SumZero.init,
+                                    kernel_constraint=SumZero(),
+                                    use_bias=False)(xr)
+        xr = tf.keras.layers.LayerNormalization(axis=1,
+                                                epsilon=1e-8, 
+                                                center=False, 
+                                                scale=False)(xr)
+        xr = tf.keras.layers.SpatialDropout1D(dropout_rate)(xr)
+        xr_nife.append(xr)
+    if len(seasons_list) > 1:
+        xr = tf.keras.layers.Concatenate(axis=2)(xr_nife)
 
-    x = tf.keras.layers.Concatenate(axis=2)([xt,xr])
+    x = tf.keras.layers.Concatenate(axis=2)([xi,xt,xr])
 
     return inputs, x
 
@@ -139,6 +152,7 @@ def resnet(x, blocks_per_layer, num_filters, n_features, halvings):
     x = make_layer(x, num_filters * (2 ** 3), blocks_per_layer[3], stride=adstride, name='layer4')
 
     x = tf.keras.layers.GlobalMaxPooling1D(name='avgpool')(x)
+    # x = tf.keras.layers.GlobalAveragePooling1D(name='avgpool')(x)
     x = tf.keras.layers.Dense(units=n_features, name='fc')(x)
 
     return x
@@ -186,7 +200,9 @@ def VGG_11(x, num_filters, n_features, halvings, dropout_rate):
     if halvings >= 5:
         x = tf.keras.layers.MaxPooling1D(pool_size=2, strides=2, padding="valid")(x)
     
-    x = tf.keras.layers.GlobalMaxPooling1D()(x) #Global Averaging replaces Flatten
+    #Global Averaging replaces Flatten
+    x = tf.keras.layers.GlobalMaxPooling1D()(x) 
+    # x = tf.keras.layers.GlobalAveragePooling1D()(x)
 
     # Create model.    
     layer_units = [(num_filters * (2 ** 3))*4, (num_filters * (2 ** 3))*4]
@@ -205,7 +221,7 @@ z_normalise = tf.keras.layers.LayerNormalization(axis=0,
                                                  scale=False)
 
 def preprocessing(max_length, min_length, augment):    
-    def _preprocessing(inp, y):        
+    def _preprocessing(inp, y):
         aug = 0
         if augment:
             aug = tf.random.uniform(shape=[], minval=0, maxval=augment, dtype=tf.int32)            
@@ -225,14 +241,16 @@ class DeepFFORMA():
     def __init__(self, mc, n_features, n_models):
         self.mc = mc                
         self.n_models = n_models
-
-        self.min_length  = self.mc['model_parameters']['min_length']
+        
         self.batch_size = self.mc['train_parameters']['batch_size']
         self.max_length  = self.mc['train_parameters']['max_length']        
         self.augment = self.mc['train_parameters']['augment']
         self.seasons  = self.mc['model_parameters']['seasons']
-
+        
         halvings  = self.mc['model_parameters']['halvings']
+        # 32/(2**5)=1, 16/(2**4)=1, 8/(2**3)=1, 4/(2**2)=1
+        self.min_length  = {5:32, 4:16, 3:8, 2:4, 1:2, 0:1}[halvings]
+
         vgg_filters = self.mc['model_parameters']['vgg_filters']
         res_filters = self.mc['model_parameters']['res_filters']
         dropout_rate = self.mc['model_parameters']['dropout_rate']

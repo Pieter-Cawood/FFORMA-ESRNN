@@ -49,7 +49,7 @@ def run(df_info, df_train_data, df_pred_data,
     print(45*"-")
 
 if __name__ == '__main__':
-    for seasonality in ['Hourly','Daily','Weekly','Quarterly','Yearly','Monthly']:
+    for seasonality in ['Hourly','Daily','Weekly','Monthly','Yearly','Quarterly']:
         # seasonality = 'Daily'
         X_train_df, y_train_df, X_test_df, y_test_df = m4_parser(seasonality, 
                                                                  'data', 
@@ -62,7 +62,7 @@ if __name__ == '__main__':
                                  'Neural Averaging 2',
                                  'Neural Stacking',
                                  'Deep FFORMA_VGG',
-                                 'Deep FFORMA_RESNET'][-2:]:            
+                                 'Deep FFORMA_RESNET'][-1:]:            
             run(df_info=X_test_df,
                 df_train_data=y_train_df,
                 df_pred_data=y_test_df,
