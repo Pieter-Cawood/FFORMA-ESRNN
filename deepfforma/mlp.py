@@ -90,7 +90,7 @@ def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
     if len(seasons_list) > 1:
         xr = tf.keras.layers.Concatenate(axis=2)(xr_nife)
 
-    x = tf.keras.layers.Concatenate(axis=2)([xi,xi,xt,xr])
+    x = tf.keras.layers.Concatenate(axis=2)([xi,xt,xr])
 
     return inputs, x
 
