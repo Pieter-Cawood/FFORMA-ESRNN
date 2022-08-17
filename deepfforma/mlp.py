@@ -90,7 +90,7 @@ def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
     if len(seasons_list) > 1:
         xr = tf.keras.layers.Concatenate(axis=2)(xr_nife)
 
-    x = tf.keras.layers.Concatenate(axis=2)([xi,xt,xr])
+    x = tf.keras.layers.Concatenate(axis=2)([xi,xi,xt,xr])
 
     return inputs, x
 
@@ -152,6 +152,7 @@ def resnet(x, blocks_per_layer, num_filters, n_features, halvings):
     x = make_layer(x, num_filters * (2 ** 3), blocks_per_layer[3], stride=adstride, name='layer4')
 
     x = tf.keras.layers.GlobalMaxPooling1D(name='avgpool')(x)
+    # x = tf.keras.layers.GlobalAveragePooling1D(name='avgpool')(x)
     # x = tf.keras.layers.GlobalAveragePooling1D(name='avgpool')(x)
     x = tf.keras.layers.Dense(units=n_features, name='fc')(x)
 
