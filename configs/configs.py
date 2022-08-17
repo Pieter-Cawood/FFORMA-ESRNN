@@ -104,7 +104,7 @@ DEEPFFORMA_CONFIGS = {
             stop_grow_count=20,
             augment=False
         )),
-
+    
     'Yearly': dict(
         model_parameters=dict(
             halvings=1, #13 13
