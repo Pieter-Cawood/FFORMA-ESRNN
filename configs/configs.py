@@ -13,7 +13,7 @@ DEEPFFORMA_CONFIGS = {
     #length-halvings-points: 256-5-8, 128-4-8, 64-3-8, 32-2-8, 16-1-8
     #length-halvings-points: 224-5-7  112-4-7, 56-3-7, 28-2-7, 14-1-7
     #length-halvings-points: 192-5-6   96-4-6, 48-3-6, 24-2-6, 12-1-6
-    #length-halvings-points: 160-5-5   80-4-5, 40-3-5, 20-2-5, 10-1-5
+    #length-halvings-points: 160-5-5   80-4-5, 40-3-5, 20-2-5, 10-1-5    
     #length-halvings-points: 128-5-4   64-4-4, 32-3-4, 16-2-4,  8-1-4
     #length-halvings-points:  96-5-3   48-4-3, 24-3-3, 12-2-3,  6-1-3
     #length-halvings-points:  64-5-2   32-4-2, 16-3-2,  8-2-2,  4-1-2
@@ -22,7 +22,7 @@ DEEPFFORMA_CONFIGS = {
     #35-1112
     'Hourly': dict(
         model_parameters=dict(
-            halvings=5,
+            halvings=5, # 700 700
             vgg_filters=None,
             res_filters=64,
             dropout_rate=0.1,
@@ -39,7 +39,7 @@ DEEPFFORMA_CONFIGS = {
 
     'Daily': dict(
         model_parameters=dict(
-            halvings=5,
+            halvings=4, #93 111
             vgg_filters=None,
             res_filters=64,
             dropout_rate=0.1,
@@ -56,7 +56,7 @@ DEEPFFORMA_CONFIGS = {
 
     'Weekly': dict(
         model_parameters=dict(
-            halvings=5,
+            halvings=3, #80 80
             vgg_filters=None,
             res_filters=64,
             dropout_rate=0.2,
@@ -73,7 +73,7 @@ DEEPFFORMA_CONFIGS = {
     
     'Monthly': dict(
         model_parameters=dict(
-            halvings=4,
+            halvings=3, #42 66
             vgg_filters=None,
             res_filters=64,
             dropout_rate=0.1,
@@ -90,24 +90,24 @@ DEEPFFORMA_CONFIGS = {
     
     'Quarterly': dict(
         model_parameters=dict(
-            halvings=4,
+            halvings=2, #16, 24
             vgg_filters=None,
             res_filters=64,
-            dropout_rate=0.1,
+            dropout_rate=0.2,
             seasons=4
         ),
         train_parameters=dict(
             learn_rate=1e-4,
             batch_size=92,
             epochs=150,
-            max_length=64, #99-267
+            max_length=96, #99-267
             stop_grow_count=20,
             augment=False
         )),
 
     'Yearly': dict(
         model_parameters=dict(
-            halvings=3,
+            halvings=1, #13 13
             vgg_filters=None,
             res_filters=64,
             dropout_rate=0.1,
