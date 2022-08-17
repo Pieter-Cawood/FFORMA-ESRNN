@@ -37,19 +37,10 @@ class SoftMax(tf.keras.constraints.Constraint):
         return exp / tf.reduce_sum(exp)
 
 def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
-    # inputs = tf.keras.layers.ZeroPadding1D(padding=(0,seasons))(inputs)
+    inputs = tf.keras.layers.ZeroPadding1D(padding=(0,seasons))(inputs)
 
-    # xi = inputs            
-    # xi = tf.keras.layers.Conv1D(num_filters, (seasons+1),
-    #                             padding='valid',
-    #                             kernel_initializer=SumOne.init,
-    #                             kernel_constraint=SumOne(),
-    #                             use_bias=False)(xi)
-    # xi = tf.keras.layers.LayerNormalization(axis=1, 
-    #                                         epsilon=1e-8, 
-    #                                         center=False, 
-    #                                         scale=False)(xi)
-    # xi = tf.keras.layers.SpatialDropout1D(dropout_rate)(xi)
+    xi = inputs
+    xi = tf.keras.layers.Cropping1D(cropping=(0,seasons))(xi)
     
     #Moving average head
     xt = inputs
@@ -77,7 +68,7 @@ def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
                                             scale=False)(xr)
     xr = tf.keras.layers.SpatialDropout1D(dropout_rate)(xr)
 
-    x = tf.keras.layers.Concatenate(axis=2)([xt,xr])
+    x = tf.keras.layers.Concatenate(axis=2)([xi,xt,xr])
 
     return inputs, x
 
@@ -139,6 +130,7 @@ def resnet(x, blocks_per_layer, num_filters, n_features, halvings):
     x = make_layer(x, num_filters * (2 ** 3), blocks_per_layer[3], stride=adstride, name='layer4')
 
     x = tf.keras.layers.GlobalMaxPooling1D(name='avgpool')(x)
+    # x = tf.keras.layers.GlobalAveragePooling1D(name='avgpool')(x)
     x = tf.keras.layers.Dense(units=n_features, name='fc')(x)
 
     return x

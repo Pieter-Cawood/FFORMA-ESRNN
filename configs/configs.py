@@ -23,7 +23,7 @@ DEEPFFORMA_CONFIGS = {
             min_length=32, # 1 700
             halvings=5,
             vgg_filters=None,
-            res_filters=16,
+            res_filters=64,
             dropout_rate=0.1,
             seasons=24
         ),
@@ -31,17 +31,17 @@ DEEPFFORMA_CONFIGS = {
             learn_rate=1e-4,
             batch_size=92,
             epochs=1000,
-            max_length=960,
+            max_length=256, #960,
             stop_grow_count=100,
             augment=False
         )),
 
     'Daily': dict(
         model_parameters=dict(
-            min_length=24, #1%-111, 5%-177
-            halvings=3,
+            min_length=32, #1%-111, 5%-177
+            halvings=5,
             vgg_filters=None,
-            res_filters=24,
+            res_filters=64,
             dropout_rate=0.1,
             seasons=7
         ),
@@ -49,7 +49,7 @@ DEEPFFORMA_CONFIGS = {
             learn_rate=1e-4,
             batch_size=92,
             epochs=250,
-            max_length=2940, #99-4315, 50-2940
+            max_length=224, #99-4315, 50-2940
             stop_grow_count=40,
             augment=False
         )),
@@ -75,9 +75,9 @@ DEEPFFORMA_CONFIGS = {
     'Monthly': dict(
         model_parameters=dict(
             min_length=16, #1%-66, 5%-68, 15%-69, 20%-70
-            halvings=4,
+            halvings=5,
             vgg_filters=None,
-            res_filters=24,
+            res_filters=64,
             dropout_rate=0.1,
             seasons=12
         ),
@@ -85,17 +85,17 @@ DEEPFFORMA_CONFIGS = {
             learn_rate=1e-4,
             batch_size=92,
             epochs=150,
-            max_length=664, #99-664
+            max_length=128, #99-664
             stop_grow_count=20,
             augment=False
         )),
     
     'Quarterly': dict(
         model_parameters=dict(
-            min_length=8, #1%-24, 5%-35, 15%-46, 20%-55
-            halvings=2,
+            min_length=32, #1%-24, 5%-35, 15%-46, 20%-55
+            halvings=4,
             vgg_filters=None,
-            res_filters=24,
+            res_filters=64,
             dropout_rate=0.1,
             seasons=4
         ),
@@ -103,7 +103,7 @@ DEEPFFORMA_CONFIGS = {
             learn_rate=1e-4,
             batch_size=92,
             epochs=150,
-            max_length=267, #99-267
+            max_length=64, #99-267
             stop_grow_count=20,
             augment=False
         )),
