@@ -151,9 +151,8 @@ def resnet(x, blocks_per_layer, num_filters, n_features, halvings):
     adstride = 2 if halvings >= 5 else 1
     x = make_layer(x, num_filters * (2 ** 3), blocks_per_layer[3], stride=adstride, name='layer4')
 
-    x = tf.keras.layers.GlobalMaxPooling1D(name='avgpool')(x)
-    # x = tf.keras.layers.GlobalAveragePooling1D(name='avgpool')(x)
-    # x = tf.keras.layers.GlobalAveragePooling1D(name='avgpool')(x)
+    # x = tf.keras.layers.GlobalMaxPooling1D(name='avgpool')(x)
+    x = tf.keras.layers.GlobalAveragePooling1D(name='avgpool')(x)    
     x = tf.keras.layers.Dense(units=n_features, name='fc')(x)
 
     return x
