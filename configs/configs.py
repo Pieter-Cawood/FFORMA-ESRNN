@@ -22,6 +22,7 @@ DEEPFFORMA_CONFIGS = {
     #34-1088 35-1120
     'Hourly': dict(
         model_parameters=dict(
+            adaptings=4,
             halvings=4, # 700 700
             vgg_filters=None,
             res_filters=64,
@@ -32,14 +33,14 @@ DEEPFFORMA_CONFIGS = {
             learn_rate=1e-4,
             batch_size=92,
             epochs=1000,
-            max_length=896, #960,
+            max_length=512, #960,
             stop_grow_count=100,
             augment=False
         )),
 
     'Daily': dict(
         model_parameters=dict(
-            adaptings=5,
+            adaptings=35,
             halvings=5, #93 111
             vgg_filters=None,
             res_filters=64,
@@ -57,7 +58,7 @@ DEEPFFORMA_CONFIGS = {
     
     'Weekly': dict(
         model_parameters=dict(
-            adaptings=3,
+            adaptings=9,
             halvings=5, #80 80
             vgg_filters=None,
             res_filters=64,
@@ -75,7 +76,8 @@ DEEPFFORMA_CONFIGS = {
     
     'Monthly': dict(
         model_parameters=dict(
-            halvings=3, #42 66
+            adaptings=4,
+            halvings=5, #42 66
             vgg_filters=None,
             res_filters=64,
             dropout_rate=0.1,
@@ -85,14 +87,15 @@ DEEPFFORMA_CONFIGS = {
             learn_rate=1e-4,
             batch_size=92,
             epochs=150,
-            max_length=64, #99-664
+            max_length=128, #99-664
             stop_grow_count=20,
             augment=False
         )),
     
     'Quarterly': dict(
         model_parameters=dict(
-            halvings=2, #16, 24
+            adaptings=4,
+            halvings=5, #16, 24
             vgg_filters=None,
             res_filters=64,
             dropout_rate=0.1,
@@ -102,14 +105,15 @@ DEEPFFORMA_CONFIGS = {
             learn_rate=1e-4,
             batch_size=92,
             epochs=150,
-            max_length=32, #99-267
+            max_length=128, #99-267
             stop_grow_count=20,
             augment=False
         )),
     
     'Yearly': dict(
         model_parameters=dict(
-            halvings=0, #13 13
+            adaptings=5,
+            halvings=4, #13 13
             vgg_filters=None,
             res_filters=64,
             dropout_rate=0.1,
@@ -119,7 +123,7 @@ DEEPFFORMA_CONFIGS = {
             learn_rate=1e-4,
             batch_size=92,
             epochs=150,
-            max_length=8, #99-81
+            max_length=80, #99-81
             stop_grow_count=20,
             augment=False
         ))

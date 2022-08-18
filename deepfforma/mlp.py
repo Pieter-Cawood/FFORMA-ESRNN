@@ -154,7 +154,7 @@ def resnet(x, blocks_per_layer, num_filters, n_features, halvings, adaptings):
 
     # xa = tf.keras.layers.GlobalAveragePooling1D(name='avgpool')(x)
     # xa = tf.keras.layers.GlobalMaxPooling1D(name='avgpool')(x)    
-    xb = tfa.layers.AdaptiveMaxPooling1D((adaptings,),name='adapool')(x)
+    xb = tfa.layers.AdaptiveAveragePooling1D((adaptings,),name='adapool')(x)
     xb = tf.keras.layers.Flatten()(x)
     
     # x = tf.keras.layers.Concatenate(axis=1)([xa,xb])
