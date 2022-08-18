@@ -1,5 +1,6 @@
 from tensorflow.keras.optimizers import Adam
 import tensorflow as tf
+import tensorflow_addons as tfa
 import numpy as np
 import pandas as pd
 from operator import itemgetter
@@ -133,7 +134,7 @@ def make_layer(x, planes, blocks, stride=1, name=None):
 
     return x
 
-def resnet(x, blocks_per_layer, num_filters, n_features, halvings):
+def resnet(x, blocks_per_layer, num_filters, n_features, halvings, adaptings):
     x = tf.keras.layers.ZeroPadding1D(padding=3, name='conv1_pad')(x)
     adstride = 2 if halvings >= 1 else 1
     x = tf.keras.layers.Conv1D(filters=num_filters, kernel_size=7, strides=adstride, use_bias=False, kernel_initializer="he_normal", name='conv1')(x)
@@ -151,17 +152,23 @@ def resnet(x, blocks_per_layer, num_filters, n_features, halvings):
     adstride = 2 if halvings >= 5 else 1
     x = make_layer(x, num_filters * (2 ** 3), blocks_per_layer[3], stride=adstride, name='layer4')
 
-    # x = tf.keras.layers.GlobalMaxPooling1D(name='avgpool')(x)
-    x = tf.keras.layers.GlobalAveragePooling1D(name='avgpool')(x)    
+    # xa = tf.keras.layers.GlobalAveragePooling1D(name='avgpool')(x)
+    # xa = tf.keras.layers.GlobalMaxPooling1D(name='avgpool')(x)    
+    xb = tfa.layers.AdaptiveMaxPooling1D((adaptings,),name='adapool')(x)
+    xb = tf.keras.layers.Flatten()(x)
+    
+    # x = tf.keras.layers.Concatenate(axis=1)([xa,xb])
+    x = xb
+
     x = tf.keras.layers.Dense(units=n_features, name='fc')(x)
 
     return x
 
-def resnet10(x, num_filters, n_features, halvings, **kwargs):
-    return resnet(x, [1, 1, 1, 1], num_filters, n_features, halvings, **kwargs)
+def resnet10(x, num_filters, n_features, halvings, adaptings, **kwargs):
+    return resnet(x, [1, 1, 1, 1], num_filters, n_features, halvings, adaptings, **kwargs)
 
-def resnet18(x, num_filters, n_features, halvings, **kwargs):
-    return resnet(x, [2, 2, 2, 2], num_filters, n_features, halvings, **kwargs)
+def resnet18(x, num_filters, n_features, halvings, adaptings, **kwargs):
+    return resnet(x, [2, 2, 2, 2], num_filters, n_features, halvings, adaptings, **kwargs)
 
 def Conv_1D_Block(x, model_width, kernel):
     # 1D Convolutional Block with BatchNormalization
@@ -248,15 +255,17 @@ class DeepFFORMA():
         self.seasons  = self.mc['model_parameters']['seasons']
         
         halvings  = self.mc['model_parameters']['halvings']
+        adaptings = self.mc['model_parameters']['adaptings']
         # 32/(2**5)=1, 16/(2**4)=1, 8/(2**3)=1, 4/(2**2)=1
-        self.min_length  = {5:32, 4:16, 3:8, 2:4, 1:2, 0:1}[halvings]
+        # self.min_length  = {5:32, 4:16, 3:8, 2:4, 1:2, 0:1}[halvings]
+        self.min_length = self.max_length
 
         vgg_filters = self.mc['model_parameters']['vgg_filters']
         res_filters = self.mc['model_parameters']['res_filters']
         dropout_rate = self.mc['model_parameters']['dropout_rate']
         lr = self.mc['train_parameters']['learn_rate']
         
-        inputs_ts = tf.keras.Input((None, 1))  # The input tensor
+        inputs_ts = tf.keras.Input((self.min_length, 1))  # The input tensor
 
         if vgg_filters is not None:
             if self.seasons == 0:
@@ -269,7 +278,7 @@ class DeepFFORMA():
                 outputs_ts = inputs_ts
             else:
                 inputs_ts, outputs_ts = TemporalHeads(inputs_ts, res_filters, dropout_rate, self.seasons)
-            outputs_ts = resnet10(outputs_ts, n_features, res_filters, halvings)
+            outputs_ts = resnet18(outputs_ts, n_features, res_filters, halvings, adaptings)
         else:
             raise NotImplemented()
         
@@ -287,7 +296,7 @@ class DeepFFORMA():
         #                    optimizer=self.optimizer)
         
         self.output_types =tf.float32
-        self.output_shapes=(None,) 
+        self.output_shapes=(None,)
 
         self.fitted = False
 
@@ -316,8 +325,7 @@ class DeepFFORMA():
         ds_series_train = tf.data.Dataset.from_generator(
                                 lambda: gen_series_train,
                                 output_types =(self.output_types, tf.float32),
-                                output_shapes=(self.output_shapes, (self.n_models,)))
-        
+                                output_shapes=((self.output_shapes), (self.n_models,)))        
         ds_series_valid = tf.data.Dataset.from_generator(
                                 lambda: gen_series_valid,
                                 output_types =(self.output_types, tf.float32), 
@@ -331,12 +339,13 @@ class DeepFFORMA():
 
         train_dataset = ds_series_train.map(preproc_train, num_parallel_calls=tf.data.AUTOTUNE) \
                             .shuffle(self.batch_size*10) \
-                            .padded_batch(self.batch_size) \
+                            .batch(self.batch_size) \
                             .prefetch(tf.data.AUTOTUNE)
         
         valid_dataset = ds_series_valid.map(preproc_valid, num_parallel_calls=tf.data.AUTOTUNE) \
-                            .padded_batch(self.batch_size) \
+                            .batch(self.batch_size) \
                             .prefetch(tf.data.AUTOTUNE)
+                            #padded_batch
 
         es = tf.keras.callbacks.EarlyStopping(monitor='val_loss',
                                               patience=self.mc['train_parameters']['stop_grow_count'],
@@ -373,7 +382,7 @@ class DeepFFORMA():
                 output_shapes=(self.output_shapes,))
 
         test_dataset = ds_series_test.map(preproc, num_parallel_calls=tf.data.AUTOTUNE) \
-                                     .padded_batch(self.batch_size) \
+                                     .batch(self.batch_size) \
                                      .prefetch(tf.data.AUTOTUNE)
         
         predicted_weights = self.model.predict(test_dataset)
