@@ -74,10 +74,11 @@ def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
                                     kernel_initializer=SumZero.init,
                                     kernel_constraint=SumZero(),
                                     use_bias=False)(xr)
-        xr = tf.keras.layers.LayerNormalization(axis=1,
-                                                epsilon=1e-8, 
-                                                center=False, 
-                                                scale=False)(xr)
+        # xr = tf.keras.layers.LayerNormalization(axis=1,
+        #                                         epsilon=1e-8, 
+        #                                         center=False, 
+        #                                         scale=False)(xr)
+        # xr = tf.keras.layers.UnitNormalization(axis=1)(xr)
         xr = tf.keras.layers.SpatialDropout1D(dropout_rate)(xr)
         xr_nife.append(xr)
     if len(seasons_list) > 1:
@@ -326,7 +327,7 @@ class DeepFFORMA():
                                 output_shapes=(self.output_shapes, (self.n_models,)))
 
         if self.augment:
-            preproc_train = preprocessing(self.max_length, self.min_length, self.seasons)
+            preproc_train = preprocessing(self.max_length, self.min_length, self.augment)
         else:
             preproc_train = preprocessing(self.max_length, self.min_length, 0)
         preproc_valid = preprocessing(self.max_length, self.min_length, 0)
