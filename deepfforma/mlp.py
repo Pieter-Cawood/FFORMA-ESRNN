@@ -43,22 +43,14 @@ def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
     else:
         seasons_list = seasons
     
-    # xi_nife = []
-    # xi_fork = inputs
-    # for seasons in seasons_list:
-    #     xi = tf.keras.layers.ZeroPadding1D(padding=(0,seasons))(xi_fork)
-    #     xi = tf.keras.layers.Cropping1D(cropping=(0,seasons))(xi)
-    #     xi_nife.append(xi)
-    # if len(seasons_list) > 1:
-    #     xi = tf.keras.layers.Concatenate(axis=2)(xi_nife)
     xi = inputs
-
+    
     #Moving average head
     xt_nife = []
     xt_fork = inputs    
     for seasons in seasons_list:
-        xt = tf.keras.layers.ZeroPadding1D(padding=(0,seasons))(xt_fork)
-        xt = tf.keras.layers.Conv1D(num_filters, (seasons+1),
+        xt = tf.keras.layers.ZeroPadding1D(padding=(0,seasons-1))(xt_fork)
+        xt = tf.keras.layers.Conv1D(num_filters, (seasons),
                                     padding='valid',
                                     kernel_initializer=SoftMax.init,
                                     kernel_constraint=SoftMax(),
@@ -66,7 +58,7 @@ def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
         xt = tf.keras.layers.LayerNormalization(axis=1, 
                                                 epsilon=1e-8, 
                                                 center=False, 
-                                                scale=False)(xt)
+                                                scale=False)(xt)        
         xt = tf.keras.layers.SpatialDropout1D(dropout_rate)(xt)
         xt_nife.append(xt)
     if len(seasons_list) > 1:
@@ -91,7 +83,7 @@ def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
     if len(seasons_list) > 1:
         xr = tf.keras.layers.Concatenate(axis=2)(xr_nife)
 
-    x = tf.keras.layers.Concatenate(axis=2)([xi,xt,xr])
+    x = tf.keras.layers.Concatenate(axis=2)([xt,xr])
 
     return inputs, x
 
@@ -153,7 +145,7 @@ def resnet(x, blocks_per_layer, num_filters, n_features, halvings, adaptings):
     x = make_layer(x, num_filters * (2 ** 3), blocks_per_layer[3], stride=adstride, name='layer4')
 
     # xa = tf.keras.layers.GlobalAveragePooling1D(name='avgpool')(x)
-    # xa = tf.keras.layers.GlobalMaxPooling1D(name='avgpool')(x)    
+    # xa = tf.keras.layers.GlobalMaxPooling1D(name='avgpool')(x)
     xb = tfa.layers.AdaptiveAveragePooling1D((adaptings,),name='adapool')(x)
     xb = tf.keras.layers.Flatten()(x)
     
@@ -222,6 +214,7 @@ def VGG_11(x, num_filters, n_features, halvings, dropout_rate):
     
     return x
 
+u_normalise = tf.keras.layers.UnitNormalization(axis=0)
 z_normalise = tf.keras.layers.LayerNormalization(axis=0,
                                                  epsilon=1e-8, 
                                                  center=False, 
@@ -236,9 +229,10 @@ def preprocessing(max_length, min_length, augment):
             inp = inp[aug:aug+max_length]
         else:
             inp = inp[aug:]
-        inp = z_normalise(inp)
+        # inp = z_normalise(inp)
+        # inp = u_normalise(inp)
         if min_length > tf.shape(inp)[0]:
-            pad_size = min_length - tf.shape(inp)[0]        
+            pad_size = min_length - tf.shape(inp)[0]
             paddings = [[0, pad_size]]
             inp = tf.pad(inp, paddings)
         return inp, y

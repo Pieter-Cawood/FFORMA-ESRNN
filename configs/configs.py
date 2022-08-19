@@ -23,7 +23,7 @@ DEEPFFORMA_CONFIGS = {
     'Hourly': dict(
         model_parameters=dict(
             adaptings=4,
-            halvings=4, # 700 700
+            halvings=5, # 700 700
             vgg_filters=None,
             res_filters=64,
             dropout_rate=0.1,
@@ -37,28 +37,28 @@ DEEPFFORMA_CONFIGS = {
             stop_grow_count=100,
             augment=False
         )),
-
+    
     'Daily': dict(
         model_parameters=dict(
-            adaptings=35,
+            adaptings=7,
             halvings=5, #93 111
             vgg_filters=None,
             res_filters=64,
             dropout_rate=0.1,
-            seasons=[7,365]
+            seasons=7
         ),
         train_parameters=dict(
             learn_rate=1e-4,
             batch_size=92,
             epochs=250,
-            max_length=1120, #2940, #99-4315, 50-2940
+            max_length=448, #2940, #99-4315, 50-2940
             stop_grow_count=40,
             augment=False
         )),
     
     'Weekly': dict(
         model_parameters=dict(
-            adaptings=9,
+            adaptings=3,
             halvings=5, #80 80
             vgg_filters=None,
             res_filters=64,
@@ -112,8 +112,8 @@ DEEPFFORMA_CONFIGS = {
     
     'Yearly': dict(
         model_parameters=dict(
-            adaptings=5,
-            halvings=4, #13 13
+            adaptings=10,
+            halvings=1, #13 13
             vgg_filters=None,
             res_filters=64,
             dropout_rate=0.1,
@@ -123,7 +123,7 @@ DEEPFFORMA_CONFIGS = {
             learn_rate=1e-4,
             batch_size=92,
             epochs=150,
-            max_length=80, #99-81
+            max_length=16, #99-81
             stop_grow_count=20,
             augment=False
         ))
