@@ -22,25 +22,25 @@ DEEPFFORMA_CONFIGS = {
     #34-1088 35-1120
     'Hourly': dict(
         model_parameters=dict(
-            adaptings=4,
+            adaptings=3,
             halvings=5, # 700 700
             vgg_filters=None,
             res_filters=64,
             dropout_rate=0.1,
-            seasons=[24,168]
+            seasons=24
         ),
         train_parameters=dict(
             learn_rate=1e-4,
             batch_size=92,
             epochs=1000,
-            max_length=512, #960,
+            max_length=288, #960,
             stop_grow_count=100,
             augment=False
         )),
     
     'Daily': dict(
         model_parameters=dict(
-            adaptings=7,
+            adaptings=3,
             halvings=5, #93 111
             vgg_filters=None,
             res_filters=64,
@@ -51,7 +51,7 @@ DEEPFFORMA_CONFIGS = {
             learn_rate=1e-4,
             batch_size=92,
             epochs=250,
-            max_length=448, #2940, #99-4315, 50-2940
+            max_length=288, #2940, #99-4315, 50-2940
             stop_grow_count=40,
             augment=False
         )),
@@ -76,7 +76,7 @@ DEEPFFORMA_CONFIGS = {
     
     'Monthly': dict(
         model_parameters=dict(
-            adaptings=4,
+            adaptings=3,
             halvings=5, #42 66
             vgg_filters=None,
             res_filters=64,
@@ -87,14 +87,14 @@ DEEPFFORMA_CONFIGS = {
             learn_rate=1e-4,
             batch_size=92,
             epochs=150,
-            max_length=128, #99-664
+            max_length=96, #99-664
             stop_grow_count=20,
             augment=False
         )),
     
     'Quarterly': dict(
         model_parameters=dict(
-            adaptings=4,
+            adaptings=3,
             halvings=5, #16, 24
             vgg_filters=None,
             res_filters=64,
@@ -105,15 +105,15 @@ DEEPFFORMA_CONFIGS = {
             learn_rate=1e-4,
             batch_size=92,
             epochs=150,
-            max_length=128, #99-267
+            max_length=96, #99-267
             stop_grow_count=20,
             augment=False
         )),
     
     'Yearly': dict(
         model_parameters=dict(
-            adaptings=10,
-            halvings=1, #13 13
+            adaptings=3,
+            halvings=5, #13 13
             vgg_filters=None,
             res_filters=64,
             dropout_rate=0.1,
@@ -123,7 +123,7 @@ DEEPFFORMA_CONFIGS = {
             learn_rate=1e-4,
             batch_size=92,
             epochs=150,
-            max_length=16, #99-81
+            max_length=96, #99-81
             stop_grow_count=20,
             augment=False
         ))

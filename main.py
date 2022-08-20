@@ -347,7 +347,7 @@ def run(df_info, df_pred_data, y_train_df, ts_pred_data,
 
 
 if __name__ == '__main__':
-    for seasonality in ['Hourly','Daily','Weekly','Quarterly','Yearly','Monthly'][1:2]:
+    for seasonality in ['Hourly','Daily','Weekly','Quarterly','Yearly','Monthly'][0:]:
         # seasonality = 'Daily'
         print(f"Loading Data {seasonality}")
 
@@ -369,6 +369,6 @@ if __name__ == '__main__':
                 seasonality=seasonality,
                 optimizing_runs=0,
                 combination_type=combination_type,
-                n_runs=1,
+                n_runs=5,
                 k_folds=10,
                 hyper_search_run=False)
