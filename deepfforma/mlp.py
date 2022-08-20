@@ -326,7 +326,7 @@ class DeepFFORMA():
                                 output_shapes=(self.output_shapes, (self.n_models,)))
 
         if self.augment:
-            preproc_train = preprocessing(self.max_length, self.min_length, self.seasons)
+            preproc_train = preprocessing(self.max_length, self.min_length, self.augment)
         else:
             preproc_train = preprocessing(self.max_length, self.min_length, 0)
         preproc_valid = preprocessing(self.max_length, self.min_length, 0)

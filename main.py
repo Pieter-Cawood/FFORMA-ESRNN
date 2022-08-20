@@ -156,7 +156,7 @@ def run(df_info, df_pred_data, y_train_df, ts_pred_data,
                                                                 return_averages=False)
                 test_df = test_fforma_df
 
-            elif combination_type == 'Deep FFORMA':                                
+            elif combination_type == 'Deep FFORMA':
                 deepforma = DeepFFORMA(DEEPFFORMA_CONFIGS[seasonality],
                                   train_feats.shape[1],
                                   train_errors.shape[1]
