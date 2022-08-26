@@ -369,6 +369,6 @@ if __name__ == '__main__':
                 seasonality=seasonality,
                 optimizing_runs=0,
                 combination_type=combination_type,
-                n_runs=5,
+                n_runs=1,
                 k_folds=10,
-                hyper_search_run=False)
+                hyper_search_run=True)
