@@ -17,6 +17,7 @@ DEEPFFORMA_CONFIGS = {
     #length-halvings-points: 128-5-4   64-4-4, 32-3-4, 16-2-4,  8-1-4
 
     #length-halvings-points:  96-5-3   48-4-3, 24-3-3, 12-2-3,  6-1-3
+
     #length-halvings-points:  64-5-2   32-4-2, 16-3-2,  8-2-2,  4-1-2
     #
     #11-352, 12-384, 13-416, 14-448, 15-480, 16-512, 17-544, 18-576, 
@@ -68,7 +69,7 @@ DEEPFFORMA_CONFIGS = {
             seasons=52
         ),
         train_parameters=dict(
-            learn_rate=1e-4,
+            learn_rate=1e-3,
             batch_size=92,
             epochs=1000,
             max_length=256+52-1, #288 #99-2283
