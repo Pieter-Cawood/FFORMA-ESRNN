@@ -301,6 +301,7 @@ def run(df_info, df_pred_data, y_train_df, ts_pred_data,
             combination_run_loss_r2 += combination_r2            
 
             print(15 * '=','RUN:',run_num + 1, ' FOLD:',test_fold_num+1, 15 * '=')
+            print(f"Seasonality {seasonality} - {combination_type}")
             print('ESRNN OWA ', np.average(esrnn_owa))
             print(combination_type +' Mean OWA', combination_owa_mean)
             print(combination_type + ' Median OWA', combination_owa_median)
@@ -314,7 +315,7 @@ def run(df_info, df_pred_data, y_train_df, ts_pred_data,
         overall_combination_loss_r2 += (combination_run_loss_r2 / k_folds)        
         overall_esrnn_loss += esrnn_run_score
 
-        print(15 * '=', 'RUN:', run_num + 1, ' AVERAGES:', 15 * '=')
+        print(15 * '=', 'RUN:', run_num + 1, ' AVERAGES:', 15 * '=')        
         print('ESRNN OWA: {} '.format(np.round(esrnn_run_score, 3)))
         print(combination_type + ' Mean OWA: {} '.format(np.round((combination_run_loss_mean / k_folds), 3)))
         print(combination_type + ' Median OWA: {} '.format(np.round((combination_run_loss_median / k_folds), 3)))
@@ -369,6 +370,7 @@ if __name__ == '__main__':
                 seasonality=seasonality,
                 optimizing_runs=0,
                 combination_type=combination_type,
-                n_runs=1,
+                n_runs=5,
                 k_folds=10,
-                hyper_search_run=True)
+                hyper_search_run=False)
+            print(f"Ending {seasonality} {combination_type}")

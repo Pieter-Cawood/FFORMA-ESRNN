@@ -46,29 +46,25 @@ def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
     xi = inputs
     
     #Moving average head
-    xt_nife = []
-    xt_fork = inputs    
+    xt = inputs
     for seasons in seasons_list:
-        xt = tf.keras.layers.ZeroPadding1D(padding=(0,seasons-1))(xt_fork)
-        xt = tf.keras.layers.Conv1D(num_filters, (seasons),
-                                    padding='valid',
-                                    kernel_initializer=SoftMax.init,
-                                    kernel_constraint=SoftMax(),
-                                    use_bias=False)(xt)
-        xt = tf.keras.layers.LayerNormalization(axis=1, 
+        if seasons > 1:
+            xt = tf.keras.layers.Conv1D(num_filters, (seasons),
+                                        padding='valid',
+                                        kernel_initializer=SoftMax.init,
+                                        kernel_constraint=SoftMax(),
+                                        use_bias=False)(xt)
+        xt = tf.keras.layers.LayerNormalization(axis=1,
                                                 epsilon=1e-8, 
                                                 center=False, 
-                                                scale=False)(xt)        
-        xt = tf.keras.layers.SpatialDropout1D(dropout_rate)(xt)
-        xt_nife.append(xt)
-    if len(seasons_list) > 1:
-        xt = tf.keras.layers.Concatenate(axis=2)(xt_nife)
+                                                scale=False)(xt)
+        if seasons > 1:
+            xt = tf.keras.layers.SpatialDropout1D(dropout_rate)(xt)
 
-    #Differencing head    
-    xr_nife = []
-    xr_fork = inputs
+    #Differencing head
+    xr = inputs
     for seasons in seasons_list:
-        xr = tf.keras.layers.ZeroPadding1D(padding=(0,seasons))(xr_fork)
+        xr = tf.keras.layers.ZeroPadding1D(padding=(0,1))(xr)
         xr = tf.keras.layers.Conv1D(num_filters, (seasons+1),
                                     padding='valid',
                                     kernel_initializer=SumZero.init,
@@ -79,9 +75,6 @@ def TemporalHeads(inputs, num_filters, dropout_rate, seasons):
                                                 center=False, 
                                                 scale=False)(xr)
         xr = tf.keras.layers.SpatialDropout1D(dropout_rate)(xr)
-        xr_nife.append(xr)
-    if len(seasons_list) > 1:
-        xr = tf.keras.layers.Concatenate(axis=2)(xr_nife)
 
     x = tf.keras.layers.Concatenate(axis=2)([xt,xr])
 
@@ -132,8 +125,8 @@ def resnet(x, blocks_per_layer, num_filters, n_features, halvings, adaptings):
     x = tf.keras.layers.Conv1D(filters=num_filters, kernel_size=7, strides=adstride, use_bias=False, kernel_initializer="he_normal", name='conv1')(x)
     x = tf.keras.layers.BatchNormalization(epsilon=1e-5, name='bn1')(x)
     x = tf.keras.layers.ReLU(name='relu1')(x)
-    x = tf.keras.layers.ZeroPadding1D(padding=1, name='maxpool_pad')(x)
     if halvings >= 2:
+        x = tf.keras.layers.ZeroPadding1D(padding=1, name='maxpool_pad')(x)
         x = tf.keras.layers.MaxPooling1D(pool_size=3, strides=2, name='maxpool')(x)
 
     x = make_layer(x, num_filters * (2 ** 0), blocks_per_layer[0], name='layer1')
@@ -145,9 +138,9 @@ def resnet(x, blocks_per_layer, num_filters, n_features, halvings, adaptings):
     x = make_layer(x, num_filters * (2 ** 3), blocks_per_layer[3], stride=adstride, name='layer4')
 
     # xa = tf.keras.layers.GlobalAveragePooling1D(name='avgpool')(x)
-    # xa = tf.keras.layers.GlobalMaxPooling1D(name='avgpool')(x)
-    xb = tfa.layers.AdaptiveAveragePooling1D((adaptings,),name='adapool')(x)
-    xb = tf.keras.layers.Flatten()(x)
+    xb = tf.keras.layers.GlobalMaxPooling1D(name='avgpool')(x)
+    # xb = tfa.layers.AdaptiveAveragePooling1D((adaptings,),name='adapool')(x)
+    # xb = tf.keras.layers.Flatten()(x)
     
     # x = tf.keras.layers.Concatenate(axis=1)([xa,xb])
     x = xb
@@ -224,9 +217,9 @@ def preprocessing(max_length, min_length, augment):
     def _preprocessing(inp, y):
         aug = 0
         if augment:
-            aug = tf.random.uniform(shape=[], minval=0, maxval=augment, dtype=tf.int32)            
+            aug = tf.random.uniform(shape=[], minval=0, maxval=2, dtype=tf.int32)            
         if max_length is not None:
-            inp = inp[aug:aug+max_length]
+            inp = inp[aug*max_length:(aug+1)*max_length]
         else:
             inp = inp[aug:]
         # inp = z_normalise(inp)
